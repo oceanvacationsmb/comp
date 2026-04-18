@@ -1,1 +1,522 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Comp Dashboard</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://unpkg.com" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <style>
+    body { background: #f5f7fb; }
+    #map { height: 420px; }
+    .status-green { background:#dcfce7; color:#166534; }
+    .status-yellow { background:#fef9c3; color:#854d0e; }
+    .status-red { background:#fee2e2; color:#991b1b; }
+    .status-blue { background:#dbeafe; color:#1d4ed8; }
+    .calendar-scroll::-webkit-scrollbar { height: 10px; }
+    .calendar-scroll::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 8px; }
+  </style>
+</head>
+<body class="text-slate-800">
+  <div class="max-w-7xl mx-auto p-4 md:p-6 space-y-6">
+    <div class="bg-white rounded-3xl shadow-sm p-5 md:p-6">
+      <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div>
+          <h1 class="text-2xl md:text-3xl font-bold">Competitor Pricing Dashboard</h1>
+          <p class="text-slate-500 mt-1">Sample first page for one property. Static demo first, live data later.</p>
+        </div>
+        <div class="flex flex-wrap gap-2">
+          <button id="loadSampleBtn" class="px-4 py-2 rounded-2xl bg-slate-900 text-white font-medium">Load Sample</button>
+          <button id="toggleDetailsBtn" class="px-4 py-2 rounded-2xl bg-slate-100 text-slate-700 font-medium">Toggle Comp Details</button>
+        </div>
+      </div>
+    </div>
 
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div class="lg:col-span-2 bg-white rounded-3xl shadow-sm p-5 md:p-6">
+        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-4">
+          <div>
+            <h2 class="text-xl font-semibold">Property Summary</h2>
+            <p id="summaryAddress" class="text-slate-500 text-sm mt-1">Waiting for data</p>
+          </div>
+          <div class="flex flex-wrap gap-2 text-sm">
+            <span id="summaryStatus" class="px-3 py-1 rounded-full font-semibold status-yellow">Average</span>
+            <span id="summaryMonth" class="px-3 py-1 rounded-full bg-slate-100">May 2026</span>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 md:grid-cols-5 gap-3">
+          <div class="rounded-2xl bg-slate-50 p-4">
+            <div class="text-xs text-slate-500">Your Avg Rate</div>
+            <div id="metricYourAvg" class="text-2xl font-bold mt-1">$0</div>
+          </div>
+          <div class="rounded-2xl bg-slate-50 p-4">
+            <div class="text-xs text-slate-500">Comp Avg Rate</div>
+            <div id="metricCompAvg" class="text-2xl font-bold mt-1">$0</div>
+          </div>
+          <div class="rounded-2xl bg-slate-50 p-4">
+            <div class="text-xs text-slate-500">Difference</div>
+            <div id="metricDiff" class="text-2xl font-bold mt-1">0%</div>
+          </div>
+          <div class="rounded-2xl bg-slate-50 p-4">
+            <div class="text-xs text-slate-500">Comps Nearby</div>
+            <div id="metricComps" class="text-2xl font-bold mt-1">0</div>
+          </div>
+          <div class="rounded-2xl bg-slate-50 p-4">
+            <div class="text-xs text-slate-500">Amenities Match</div>
+            <div id="metricMatch" class="text-2xl font-bold mt-1">0%</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="bg-white rounded-3xl shadow-sm p-5 md:p-6">
+        <h2 class="text-xl font-semibold mb-4">Decision Rules</h2>
+        <div class="space-y-3 text-sm">
+          <div class="flex justify-between border-b pb-2"><span>Within ±5%</span><span class="font-semibold">STAY</span></div>
+          <div class="flex justify-between border-b pb-2"><span>5% to 15% low</span><span class="font-semibold">RAISE +5%</span></div>
+          <div class="flex justify-between border-b pb-2"><span>15% to 30% low</span><span class="font-semibold">RAISE +10% to +15%</span></div>
+          <div class="flex justify-between border-b pb-2"><span>5% to 15% high</span><span class="font-semibold">LOWER -5% to -8%</span></div>
+          <div class="flex justify-between border-b pb-2"><span>15% to 30% high</span><span class="font-semibold">LOWER -10% to -15%</span></div>
+          <div class="flex justify-between"><span>30%+ off market</span><span class="font-semibold">STRONG CHANGE</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="bg-white rounded-3xl shadow-sm p-5 md:p-6">
+      <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-4">
+        <div>
+          <h2 class="text-xl font-semibold">Date Decision Table</h2>
+          <p class="text-slate-500 text-sm">Fast action view. Click any row to see real comps for that night.</p>
+        </div>
+        <div class="text-sm text-slate-500">Color = your position vs market</div>
+      </div>
+
+      <div class="overflow-x-auto">
+        <table class="w-full min-w-[980px] text-sm">
+          <thead>
+            <tr class="text-left text-slate-500 border-b">
+              <th class="py-3 pr-3">Date</th>
+              <th class="py-3 pr-3">Event</th>
+              <th class="py-3 pr-3">Your Rate</th>
+              <th class="py-3 pr-3">Comp Low</th>
+              <th class="py-3 pr-3">Comp Avg</th>
+              <th class="py-3 pr-3">Comp High</th>
+              <th class="py-3 pr-3">Diff</th>
+              <th class="py-3 pr-3">Status</th>
+              <th class="py-3 pr-3">Action</th>
+            </tr>
+          </thead>
+          <tbody id="decisionTableBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="bg-white rounded-3xl shadow-sm p-5 md:p-6">
+      <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-4">
+        <div>
+          <h2 class="text-xl font-semibold">Scrollable Calendar Strip</h2>
+          <p class="text-slate-500 text-sm">Quick left-right scan. Top row is your property.</p>
+        </div>
+      </div>
+      <div id="calendarStrip" class="calendar-scroll overflow-x-auto"></div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div class="lg:col-span-2 bg-white rounded-3xl shadow-sm p-5 md:p-6">
+        <div class="flex items-center justify-between mb-4">
+          <div>
+            <h2 class="text-xl font-semibold">Map</h2>
+            <p class="text-slate-500 text-sm">Your location vs nearby similar comps</p>
+          </div>
+        </div>
+        <div id="map" class="rounded-2xl overflow-hidden"></div>
+      </div>
+
+      <div class="bg-white rounded-3xl shadow-sm p-5 md:p-6">
+        <div class="flex items-center justify-between mb-4">
+          <div>
+            <h2 class="text-xl font-semibold">Selected Date</h2>
+            <p id="selectedDateLabel" class="text-slate-500 text-sm">Click a row</p>
+          </div>
+        </div>
+        <div id="selectedDateSummary" class="space-y-3"></div>
+      </div>
+    </div>
+
+    <div id="compCardsSection" class="bg-white rounded-3xl shadow-sm p-5 md:p-6">
+      <div class="flex items-center justify-between mb-4">
+        <div>
+          <h2 class="text-xl font-semibold">Nearby Similar Comp Properties</h2>
+          <p class="text-slate-500 text-sm">Real comp cards with picture, features, distance and listing link</p>
+        </div>
+      </div>
+      <div id="compCards" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5"></div>
+    </div>
+  </div>
+
+  <script>
+    const sampleData = {
+      property: {
+        id: 'you-1',
+        title: 'Your Listing · 508/1',
+        address: 'Sample Address, North Myrtle Beach, SC',
+        lat: 33.8188,
+        lng: -78.6800,
+        image: 'https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?auto=format&fit=crop&w=1200&q=80',
+        type: 'Entire home',
+        bedrooms: 3,
+        baths: 2,
+        guests: 8,
+        pool: true,
+        beachType: 'Walk to beach',
+        selfCheckIn: true,
+        listingUrl: 'https://www.airbnb.com/rooms/1582872951053871107'
+      },
+      month: 'May 2026',
+      dates: [
+        { date: '2026-05-08', label: 'May 8', event: 'Bike Week', yourRate: 345, compRates: [389, 405, 419, 435, 460] },
+        { date: '2026-05-09', label: 'May 9', event: 'Bike Week', yourRate: 360, compRates: [410, 429, 445, 469, 499] },
+        { date: '2026-05-10', label: 'May 10', event: 'Bike Week', yourRate: 340, compRates: [379, 395, 410, 425, 450] },
+        { date: '2026-05-11', label: 'May 11', event: 'Bike Week', yourRate: 315, compRates: [345, 365, 380, 399, 425] },
+        { date: '2026-05-12', label: 'May 12', event: 'Bike Week', yourRate: 305, compRates: [335, 349, 360, 389, 410] },
+        { date: '2026-05-13', label: 'May 13', event: 'Bike Week', yourRate: 299, compRates: [330, 345, 358, 375, 399] },
+        { date: '2026-05-14', label: 'May 14', event: 'Bike Week', yourRate: 320, compRates: [349, 365, 380, 405, 430] },
+        { date: '2026-05-15', label: 'May 15', event: 'Bike Week', yourRate: 390, compRates: [435, 450, 469, 499, 530] },
+        { date: '2026-05-16', label: 'May 16', event: 'Bike Week', yourRate: 420, compRates: [469, 490, 510, 545, 580] },
+        { date: '2026-05-17', label: 'May 17', event: 'Bike Week', yourRate: 365, compRates: [399, 420, 439, 459, 489] },
+        { date: '2026-05-22', label: 'May 22', event: 'Memorial Wknd', yourRate: 445, compRates: [499, 530, 555, 589, 620] },
+        { date: '2026-05-23', label: 'May 23', event: 'Memorial Wknd', yourRate: 495, compRates: [560, 589, 620, 649, 695] },
+        { date: '2026-05-24', label: 'May 24', event: 'Memorial Wknd', yourRate: 480, compRates: [540, 569, 595, 629, 670] },
+        { date: '2026-05-25', label: 'May 25', event: 'Memorial Day', yourRate: 430, compRates: [475, 499, 525, 550, 589] }
+      ],
+      comps: [
+        {
+          id: 'comp-1',
+          title: 'Beach Duplex With Shared Pool · 508/2',
+          distance: 0.1,
+          lat: 33.8185,
+          lng: -78.6793,
+          image: 'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?auto=format&fit=crop&w=1200&q=80',
+          bedrooms: 3,
+          baths: 2,
+          guests: 8,
+          pool: true,
+          beachType: 'Walk to beach',
+          selfCheckIn: true,
+          reviews: 42,
+          rating: 4.92,
+          listingUrl: 'https://www.airbnb.com/rooms/1582936335745023293'
+        },
+        {
+          id: 'comp-2',
+          title: 'Coastal Retreat Near Beach',
+          distance: 0.2,
+          lat: 33.8197,
+          lng: -78.6821,
+          image: 'https://images.unsplash.com/photo-1600585154526-990dced4db0d?auto=format&fit=crop&w=1200&q=80',
+          bedrooms: 3,
+          baths: 2,
+          guests: 8,
+          pool: false,
+          beachType: 'Near beach',
+          selfCheckIn: true,
+          reviews: 67,
+          rating: 4.88,
+          listingUrl: '#'
+        },
+        {
+          id: 'comp-3',
+          title: 'Bright Beach House With Pool',
+          distance: 0.3,
+          lat: 33.8176,
+          lng: -78.6776,
+          image: 'https://images.unsplash.com/photo-1576941089067-2de3c901e126?auto=format&fit=crop&w=1200&q=80',
+          bedrooms: 3,
+          baths: 2,
+          guests: 8,
+          pool: true,
+          beachType: 'Walk to beach',
+          selfCheckIn: false,
+          reviews: 85,
+          rating: 4.79,
+          listingUrl: '#'
+        },
+        {
+          id: 'comp-4',
+          title: 'Family Stay Steps From Sand',
+          distance: 0.4,
+          lat: 33.8212,
+          lng: -78.6784,
+          image: 'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&w=1200&q=80',
+          bedrooms: 3,
+          baths: 2,
+          guests: 8,
+          pool: false,
+          beachType: 'Close to beach',
+          selfCheckIn: true,
+          reviews: 23,
+          rating: 4.95,
+          listingUrl: '#'
+        },
+        {
+          id: 'comp-5',
+          title: 'Updated Coastal Duplex',
+          distance: 0.5,
+          lat: 33.8167,
+          lng: -78.6842,
+          image: 'https://images.unsplash.com/photo-1494526585095-c41746248156?auto=format&fit=crop&w=1200&q=80',
+          bedrooms: 3,
+          baths: 2,
+          guests: 8,
+          pool: true,
+          beachType: 'Near beach',
+          selfCheckIn: true,
+          reviews: 51,
+          rating: 4.84,
+          listingUrl: '#'
+        }
+      ]
+    };
+
+    let map;
+    let markers = [];
+    let detailsVisible = true;
+
+    function avg(arr) {
+      return arr.reduce((a, b) => a + b, 0) / arr.length;
+    }
+
+    function getDiffPct(yourRate, marketAvg) {
+      return ((yourRate - marketAvg) / marketAvg) * 100;
+    }
+
+    function getStatus(diffPct) {
+      if (diffPct >= 25) return { label: 'EXTREMELY HIGH', className: 'status-red' };
+      if (diffPct >= 15) return { label: 'TOO HIGH', className: 'status-red' };
+      if (diffPct > 5) return { label: 'HIGH', className: 'status-yellow' };
+      if (diffPct > -5) return { label: 'AVERAGE', className: 'status-green' };
+      if (diffPct > -10) return { label: 'LOW', className: 'status-yellow' };
+      if (diffPct > -25) return { label: 'TOO LOW', className: 'status-blue' };
+      return { label: 'EXTREMELY LOW', className: 'status-blue' };
+    }
+
+    function getAction(diffPct, hasEvent) {
+      const boost = hasEvent ? 1.15 : 1;
+      if (diffPct > -5 && diffPct < 5) return { action: 'STAY', changePct: 0 };
+      if (diffPct <= -5 && diffPct > -15) return { action: 'RAISE', changePct: Math.round(5 * boost) };
+      if (diffPct <= -15 && diffPct > -30) return { action: 'RAISE', changePct: Math.round(12 * boost) };
+      if (diffPct <= -30) return { action: 'RAISE', changePct: Math.round(18 * boost) };
+      if (diffPct >= 5 && diffPct < 15) return { action: 'LOWER', changePct: Math.round(6 * boost) };
+      if (diffPct >= 15 && diffPct < 30) return { action: 'LOWER', changePct: Math.round(12 * boost) };
+      return { action: 'LOWER', changePct: Math.round(18 * boost) };
+    }
+
+    function formatCurrency(n) {
+      return `$${Math.round(n)}`;
+    }
+
+    function computeMetrics(data) {
+      const yourAvg = avg(data.dates.map(d => d.yourRate));
+      const compAvg = avg(data.dates.map(d => avg(d.compRates)));
+      const diff = getDiffPct(yourAvg, compAvg);
+      const poolMatches = data.comps.filter(c => c.pool === data.property.pool).length;
+      return {
+        yourAvg,
+        compAvg,
+        diff,
+        compCount: data.comps.length,
+        matchPct: Math.round((poolMatches / data.comps.length) * 100)
+      };
+    }
+
+    function renderSummary(data) {
+      const metrics = computeMetrics(data);
+      document.getElementById('summaryAddress').textContent = data.property.address;
+      document.getElementById('summaryMonth').textContent = data.month;
+      document.getElementById('metricYourAvg').textContent = formatCurrency(metrics.yourAvg);
+      document.getElementById('metricCompAvg').textContent = formatCurrency(metrics.compAvg);
+      document.getElementById('metricDiff').textContent = `${metrics.diff > 0 ? '+' : ''}${metrics.diff.toFixed(1)}%`;
+      document.getElementById('metricComps').textContent = metrics.compCount;
+      document.getElementById('metricMatch').textContent = `${metrics.matchPct}%`;
+
+      const overallStatus = getStatus(metrics.diff);
+      const el = document.getElementById('summaryStatus');
+      el.textContent = overallStatus.label;
+      el.className = `px-3 py-1 rounded-full font-semibold ${overallStatus.className}`;
+    }
+
+    function renderDecisionTable(data) {
+      const tbody = document.getElementById('decisionTableBody');
+      tbody.innerHTML = '';
+
+      data.dates.forEach((d, index) => {
+        const marketAvg = avg(d.compRates);
+        const compLow = Math.min(...d.compRates);
+        const compHigh = Math.max(...d.compRates);
+        const diff = getDiffPct(d.yourRate, marketAvg);
+        const status = getStatus(diff);
+        const action = getAction(diff, Boolean(d.event));
+        const tr = document.createElement('tr');
+        tr.className = 'border-b hover:bg-slate-50 cursor-pointer';
+        tr.innerHTML = `
+          <td class="py-3 pr-3 font-medium">${d.label}</td>
+          <td class="py-3 pr-3">${d.event || '-'}</td>
+          <td class="py-3 pr-3 font-semibold">${formatCurrency(d.yourRate)}</td>
+          <td class="py-3 pr-3">${formatCurrency(compLow)}</td>
+          <td class="py-3 pr-3">${formatCurrency(marketAvg)}</td>
+          <td class="py-3 pr-3">${formatCurrency(compHigh)}</td>
+          <td class="py-3 pr-3">${diff > 0 ? '+' : ''}${diff.toFixed(1)}%</td>
+          <td class="py-3 pr-3"><span class="px-2 py-1 rounded-full text-xs font-semibold ${status.className}">${status.label}</span></td>
+          <td class="py-3 pr-3 font-semibold">${action.action}${action.changePct ? ' ' + (action.action === 'RAISE' ? '+' : '-') + action.changePct + '%' : ''}</td>
+        `;
+        tr.addEventListener('click', () => showDateDetails(data, index));
+        tbody.appendChild(tr);
+      });
+    }
+
+    function renderCalendarStrip(data) {
+      const root = document.getElementById('calendarStrip');
+      const rows = [data.property, ...data.comps];
+      let html = '<div class="min-w-[1200px]">';
+      html += '<div class="grid" style="grid-template-columns: 220px repeat(' + data.dates.length + ', minmax(90px, 1fr)); gap: 8px;">';
+
+      html += '<div class="sticky left-0 bg-white z-10 font-semibold p-2 rounded-xl">Listing</div>';
+      data.dates.forEach(d => {
+        html += `<div class="bg-slate-50 rounded-xl p-2 text-center text-xs font-semibold">${d.label}<div class="text-[10px] text-slate-500 mt-1">${d.event || ''}</div></div>`;
+      });
+
+      rows.forEach((row, rowIndex) => {
+        html += `<div class="sticky left-0 bg-white z-10 p-2 rounded-xl border font-medium">${rowIndex === 0 ? 'YOU' : row.title}</div>`;
+        data.dates.forEach((d, dateIndex) => {
+          let value = '';
+          let boxClass = 'bg-slate-50';
+          if (rowIndex === 0) {
+            const marketAvg = avg(d.compRates);
+            const diff = getDiffPct(d.yourRate, marketAvg);
+            const status = getStatus(diff);
+            value = `<div class="font-semibold">${formatCurrency(d.yourRate)}</div><div class="text-[10px] mt-1">${status.label}</div>`;
+            boxClass = status.className;
+          } else {
+            const rate = d.compRates[rowIndex - 1] || d.compRates[d.compRates.length - 1];
+            value = `<div class="font-semibold">${formatCurrency(rate)}</div><div class="text-[10px] mt-1">${row.pool ? 'Pool' : 'No Pool'}</div>`;
+          }
+          html += `<div class="${boxClass} rounded-xl p-2 text-center text-xs">${value}</div>`;
+        });
+      });
+
+      html += '</div></div>';
+      root.innerHTML = html;
+    }
+
+    function renderCompCards(data) {
+      const root = document.getElementById('compCards');
+      root.innerHTML = '';
+      const cards = [data.property, ...data.comps];
+
+      cards.forEach((c, index) => {
+        const isYou = index === 0;
+        const card = document.createElement('div');
+        card.className = `rounded-3xl border overflow-hidden bg-white ${isYou ? 'border-slate-900' : 'border-slate-200'}`;
+        card.innerHTML = `
+          <img src="${c.image}" alt="${c.title}" class="w-full h-52 object-cover" />
+          <div class="p-4 space-y-3">
+            <div class="flex items-start justify-between gap-3">
+              <div>
+                <div class="text-xs uppercase tracking-wide text-slate-500">${isYou ? 'Your Listing' : 'Comp Property'}</div>
+                <h3 class="font-semibold text-lg leading-tight">${c.title}</h3>
+              </div>
+              ${!isYou ? `<div class="text-sm font-semibold bg-slate-100 px-3 py-1 rounded-full">${c.distance} mi</div>` : ''}
+            </div>
+            <div class="text-sm text-slate-600">${c.bedrooms}BR · ${c.baths}BA · Sleeps ${c.guests}</div>
+            ${!isYou ? `<div class="text-sm text-slate-600">⭐ ${c.rating} · ${c.reviews} reviews</div>` : ''}
+            <div class="flex flex-wrap gap-2 text-xs">
+              <span class="px-2 py-1 rounded-full bg-slate-100">${c.pool ? 'Pool' : 'No Pool'}</span>
+              <span class="px-2 py-1 rounded-full bg-slate-100">${c.beachType}</span>
+              <span class="px-2 py-1 rounded-full bg-slate-100">${c.selfCheckIn ? 'Self check-in' : 'No self check-in'}</span>
+            </div>
+            <a href="${c.listingUrl}" target="_blank" class="inline-block w-full text-center px-4 py-3 rounded-2xl bg-slate-900 text-white font-medium">Open Listing</a>
+          </div>
+        `;
+        root.appendChild(card);
+      });
+    }
+
+    function showDateDetails(data, index) {
+      const d = data.dates[index];
+      const marketAvg = avg(d.compRates);
+      const diff = getDiffPct(d.yourRate, marketAvg);
+      const status = getStatus(diff);
+      const action = getAction(diff, Boolean(d.event));
+      document.getElementById('selectedDateLabel').textContent = `${d.label}${d.event ? ' · ' + d.event : ''}`;
+
+      const summary = document.getElementById('selectedDateSummary');
+      summary.innerHTML = `
+        <div class="rounded-2xl bg-slate-50 p-4 space-y-2">
+          <div class="flex justify-between"><span>Your Rate</span><span class="font-semibold">${formatCurrency(d.yourRate)}</span></div>
+          <div class="flex justify-between"><span>Comp Avg</span><span class="font-semibold">${formatCurrency(marketAvg)}</span></div>
+          <div class="flex justify-between"><span>Difference</span><span class="font-semibold">${diff > 0 ? '+' : ''}${diff.toFixed(1)}%</span></div>
+          <div class="flex justify-between"><span>Status</span><span class="font-semibold">${status.label}</span></div>
+          <div class="flex justify-between"><span>Action</span><span class="font-semibold">${action.action}${action.changePct ? ' ' + (action.action === 'RAISE' ? '+' : '-') + action.changePct + '%' : ''}</span></div>
+        </div>
+        <div class="space-y-3">
+          <div class="font-semibold">Nearby comps for ${d.label}</div>
+          ${data.comps.map((c, i) => `
+            <a href="${c.listingUrl}" target="_blank" class="block rounded-2xl border p-3 hover:bg-slate-50">
+              <div class="flex items-start gap-3">
+                <img src="${c.image}" alt="${c.title}" class="w-16 h-16 rounded-xl object-cover" />
+                <div class="flex-1 min-w-0">
+                  <div class="font-medium truncate">${c.title}</div>
+                  <div class="text-sm text-slate-500">${c.distance} mi · ${c.pool ? 'Pool' : 'No Pool'} · ${c.beachType}</div>
+                </div>
+                <div class="font-semibold">${formatCurrency(d.compRates[i] || d.compRates[d.compRates.length - 1])}</div>
+              </div>
+            </a>
+          `).join('')}
+        </div>
+      `;
+    }
+
+    function initMap(data) {
+      if (!map) {
+        map = L.map('map').setView([data.property.lat, data.property.lng], 14);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          maxZoom: 19,
+          attribution: '&copy; OpenStreetMap contributors'
+        }).addTo(map);
+      }
+
+      markers.forEach(m => map.removeLayer(m));
+      markers = [];
+
+      const youMarker = L.marker([data.property.lat, data.property.lng]).addTo(map)
+        .bindPopup(`<b>YOUR LISTING</b><br>${data.property.title}<br>${data.property.address}`);
+      markers.push(youMarker);
+
+      data.comps.forEach(c => {
+        const marker = L.marker([c.lat, c.lng]).addTo(map)
+          .bindPopup(`<b>${c.title}</b><br>${c.distance} mi<br><a href="${c.listingUrl}" target="_blank">Open listing</a>`);
+        markers.push(marker);
+      });
+    }
+
+    function loadSample() {
+      renderSummary(sampleData);
+      renderDecisionTable(sampleData);
+      renderCalendarStrip(sampleData);
+      renderCompCards(sampleData);
+      initMap(sampleData);
+      showDateDetails(sampleData, 0);
+    }
+
+    document.getElementById('loadSampleBtn').addEventListener('click', loadSample);
+    document.getElementById('toggleDetailsBtn').addEventListener('click', () => {
+      detailsVisible = !detailsVisible;
+      document.getElementById('compCardsSection').style.display = detailsVisible ? 'block' : 'none';
+    });
+
+    loadSample();
+  </script>
+</body>
+</html>
