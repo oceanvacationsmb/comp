@@ -25,10 +25,15 @@
       <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
           <h1 class="text-2xl md:text-3xl font-bold">Competitor Pricing Dashboard</h1>
-          <p class="text-slate-500 mt-1">Sample first page for one property. Static demo first, live data later.</p>
+          <p class="text-slate-500 mt-1">Full month view with month picker and scrollable dates. Real listing photos and comp links will plug in once live data is wired.</p>
         </div>
-        <div class="flex flex-wrap gap-2">
-          <button id="loadSampleBtn" class="px-4 py-2 rounded-2xl bg-slate-900 text-white font-medium">Load Sample</button>
+        <div class="flex flex-wrap gap-2 items-center">
+          <select id="monthPicker" class="px-4 py-2 rounded-2xl bg-slate-100 text-slate-700 font-medium outline-none">
+            <option value="2026-05">May 2026</option>
+            <option value="2026-06">June 2026</option>
+            <option value="2026-07">July 2026</option>
+          </select>
+          <button id="loadSampleBtn" class="px-4 py-2 rounded-2xl bg-slate-900 text-white font-medium">Load Month</button>
           <button id="toggleDetailsBtn" class="px-4 py-2 rounded-2xl bg-slate-100 text-slate-700 font-medium">Toggle Comp Details</button>
         </div>
       </div>
@@ -88,7 +93,7 @@
       <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-4">
         <div>
           <h2 class="text-xl font-semibold">Date Decision Table</h2>
-          <p class="text-slate-500 text-sm">Fast action view. Click any row to see real comps for that night.</p>
+          <p class="text-slate-500 text-sm">Full month view. Scroll through all nights and click any row to see real comps for that date.</p>
         </div>
         <div class="text-sm text-slate-500">Color = your position vs market</div>
       </div>
@@ -157,14 +162,130 @@
   </div>
 
   <script>
-    const sampleData = {
-      property: {
+    const compBase = [
+      {
+        id: 'comp-1',
+        title: 'Beach Duplex With Shared Pool · 508/2',
+        distance: 0.1,
+        lat: 33.8185,
+        lng: -78.6793,
+        image: '',
+        bedrooms: 3,
+        baths: 2,
+        guests: 8,
+        pool: true,
+        beachType: 'Walk to beach',
+        selfCheckIn: true,
+        reviews: 42,
+        rating: 4.92,
+        listingUrl: 'https://www.airbnb.com/rooms/1582936335745023293'
+      },
+      {
+        id: 'comp-2',
+        title: 'Comp 2 · Real link pending',
+        distance: 0.2,
+        lat: 33.8197,
+        lng: -78.6821,
+        image: '',
+        bedrooms: 3,
+        baths: 2,
+        guests: 8,
+        pool: false,
+        beachType: 'Near beach',
+        selfCheckIn: true,
+        reviews: 67,
+        rating: 4.88,
+        listingUrl: ''
+      },
+      {
+        id: 'comp-3',
+        title: 'Comp 3 · Real link pending',
+        distance: 0.3,
+        lat: 33.8176,
+        lng: -78.6776,
+        image: '',
+        bedrooms: 3,
+        baths: 2,
+        guests: 8,
+        pool: true,
+        beachType: 'Walk to beach',
+        selfCheckIn: false,
+        reviews: 85,
+        rating: 4.79,
+        listingUrl: ''
+      },
+      {
+        id: 'comp-4',
+        title: 'Comp 4 · Real link pending',
+        distance: 0.4,
+        lat: 33.8212,
+        lng: -78.6784,
+        image: '',
+        bedrooms: 3,
+        baths: 2,
+        guests: 8,
+        pool: false,
+        beachType: 'Close to beach',
+        selfCheckIn: true,
+        reviews: 23,
+        rating: 4.95,
+        listingUrl: ''
+      },
+      {
+        id: 'comp-5',
+        title: 'Comp 5 · Real link pending',
+        distance: 0.5,
+        lat: 33.8167,
+        lng: -78.6842,
+        image: '',
+        bedrooms: 3,
+        baths: 2,
+        guests: 8,
+        pool: true,
+        beachType: 'Near beach',
+        selfCheckIn: true,
+        reviews: 51,
+        rating: 4.84,
+        listingUrl: ''
+      }
+    ];
+
+    function getMonthLabel(monthValue) {
+      const labels = {
+        '2026-05': 'May 2026',
+        '2026-06': 'June 2026',
+        '2026-07': 'July 2026'
+      };
+      return labels[monthValue] || monthValue;
+    }
+
+    function getEventLabel(monthValue, day) {
+      const events = {
+        '2026-05': {
+          8: 'Bike Week', 9: 'Bike Week', 10: 'Bike Week', 11: 'Bike Week', 12: 'Bike Week', 13: 'Bike Week', 14: 'Bike Week', 15: 'Bike Week', 16: 'Bike Week', 17: 'Bike Week',
+          22: 'Memorial Wknd', 23: 'Memorial Wknd', 24: 'Memorial Wknd', 25: 'Memorial Day'
+        },
+        '2026-06': {
+          4: 'CCMF', 5: 'CCMF', 6: 'CCMF', 7: 'CCMF'
+        },
+        '2026-07': {
+          3: 'July 4th', 4: 'July 4th', 5: 'July 4th'
+        }
+      };
+      return events[monthValue]?.[day] || '';
+    }
+
+    function buildMonthData(monthValue) {
+      const [year, month] = monthValue.split('-').map(Number);
+      const daysInMonth = new Date(year, month, 0).getDate();
+      const monthIndex = month - 1;
+      const property = {
         id: 'you-1',
         title: 'Your Listing · 508/1',
         address: 'Sample Address, North Myrtle Beach, SC',
         lat: 33.8188,
         lng: -78.6800,
-        image: 'https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?auto=format&fit=crop&w=1200&q=80',
+        image: '',
         type: 'Entire home',
         bedrooms: 3,
         baths: 2,
@@ -173,112 +294,47 @@
         beachType: 'Walk to beach',
         selfCheckIn: true,
         listingUrl: 'https://www.airbnb.com/rooms/1582872951053871107'
-      },
-      month: 'May 2026',
-      dates: [
-        { date: '2026-05-08', label: 'May 8', event: 'Bike Week', yourRate: 345, compRates: [389, 405, 419, 435, 460] },
-        { date: '2026-05-09', label: 'May 9', event: 'Bike Week', yourRate: 360, compRates: [410, 429, 445, 469, 499] },
-        { date: '2026-05-10', label: 'May 10', event: 'Bike Week', yourRate: 340, compRates: [379, 395, 410, 425, 450] },
-        { date: '2026-05-11', label: 'May 11', event: 'Bike Week', yourRate: 315, compRates: [345, 365, 380, 399, 425] },
-        { date: '2026-05-12', label: 'May 12', event: 'Bike Week', yourRate: 305, compRates: [335, 349, 360, 389, 410] },
-        { date: '2026-05-13', label: 'May 13', event: 'Bike Week', yourRate: 299, compRates: [330, 345, 358, 375, 399] },
-        { date: '2026-05-14', label: 'May 14', event: 'Bike Week', yourRate: 320, compRates: [349, 365, 380, 405, 430] },
-        { date: '2026-05-15', label: 'May 15', event: 'Bike Week', yourRate: 390, compRates: [435, 450, 469, 499, 530] },
-        { date: '2026-05-16', label: 'May 16', event: 'Bike Week', yourRate: 420, compRates: [469, 490, 510, 545, 580] },
-        { date: '2026-05-17', label: 'May 17', event: 'Bike Week', yourRate: 365, compRates: [399, 420, 439, 459, 489] },
-        { date: '2026-05-22', label: 'May 22', event: 'Memorial Wknd', yourRate: 445, compRates: [499, 530, 555, 589, 620] },
-        { date: '2026-05-23', label: 'May 23', event: 'Memorial Wknd', yourRate: 495, compRates: [560, 589, 620, 649, 695] },
-        { date: '2026-05-24', label: 'May 24', event: 'Memorial Wknd', yourRate: 480, compRates: [540, 569, 595, 629, 670] },
-        { date: '2026-05-25', label: 'May 25', event: 'Memorial Day', yourRate: 430, compRates: [475, 499, 525, 550, 589] }
-      ],
-      comps: [
-        {
-          id: 'comp-1',
-          title: 'Beach Duplex With Shared Pool · 508/2',
-          distance: 0.1,
-          lat: 33.8185,
-          lng: -78.6793,
-          image: 'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?auto=format&fit=crop&w=1200&q=80',
-          bedrooms: 3,
-          baths: 2,
-          guests: 8,
-          pool: true,
-          beachType: 'Walk to beach',
-          selfCheckIn: true,
-          reviews: 42,
-          rating: 4.92,
-          listingUrl: 'https://www.airbnb.com/rooms/1582936335745023293'
-        },
-        {
-          id: 'comp-2',
-          title: 'Coastal Retreat Near Beach',
-          distance: 0.2,
-          lat: 33.8197,
-          lng: -78.6821,
-          image: 'https://images.unsplash.com/photo-1600585154526-990dced4db0d?auto=format&fit=crop&w=1200&q=80',
-          bedrooms: 3,
-          baths: 2,
-          guests: 8,
-          pool: false,
-          beachType: 'Near beach',
-          selfCheckIn: true,
-          reviews: 67,
-          rating: 4.88,
-          listingUrl: '#'
-        },
-        {
-          id: 'comp-3',
-          title: 'Bright Beach House With Pool',
-          distance: 0.3,
-          lat: 33.8176,
-          lng: -78.6776,
-          image: 'https://images.unsplash.com/photo-1576941089067-2de3c901e126?auto=format&fit=crop&w=1200&q=80',
-          bedrooms: 3,
-          baths: 2,
-          guests: 8,
-          pool: true,
-          beachType: 'Walk to beach',
-          selfCheckIn: false,
-          reviews: 85,
-          rating: 4.79,
-          listingUrl: '#'
-        },
-        {
-          id: 'comp-4',
-          title: 'Family Stay Steps From Sand',
-          distance: 0.4,
-          lat: 33.8212,
-          lng: -78.6784,
-          image: 'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&w=1200&q=80',
-          bedrooms: 3,
-          baths: 2,
-          guests: 8,
-          pool: false,
-          beachType: 'Close to beach',
-          selfCheckIn: true,
-          reviews: 23,
-          rating: 4.95,
-          listingUrl: '#'
-        },
-        {
-          id: 'comp-5',
-          title: 'Updated Coastal Duplex',
-          distance: 0.5,
-          lat: 33.8167,
-          lng: -78.6842,
-          image: 'https://images.unsplash.com/photo-1494526585095-c41746248156?auto=format&fit=crop&w=1200&q=80',
-          bedrooms: 3,
-          baths: 2,
-          guests: 8,
-          pool: true,
-          beachType: 'Near beach',
-          selfCheckIn: true,
-          reviews: 51,
-          rating: 4.84,
-          listingUrl: '#'
-        }
-      ]
-    };
+      };
+
+      const dates = [];
+      for (let day = 1; day <= daysInMonth; day++) {
+        const current = new Date(year, monthIndex, day);
+        const dow = current.getDay();
+        const isWeekend = dow === 5 || dow === 6;
+        const event = getEventLabel(monthValue, day);
+        const seasonalBoost = monthValue === '2026-07' ? 70 : monthValue === '2026-06' ? 35 : 15;
+        const eventBoost = event ? 60 : 0;
+        const weekendBoost = isWeekend ? 85 : 0;
+        const base = 255 + seasonalBoost + eventBoost + weekendBoost + (day % 4) * 8;
+        const compRates = [
+          Math.round(base + 35),
+          Math.round(base + 52),
+          Math.round(base + 68),
+          Math.round(base + 87),
+          Math.round(base + 110)
+        ];
+        let yourRate = Math.round(base + 22 - ((day % 5) * 9));
+        if (day % 9 === 0) yourRate -= 22;
+        if (day % 11 === 0) yourRate += 35;
+
+        dates.push({
+          date: `${monthValue}-${String(day).padStart(2, '0')}`,
+          label: `${current.toLocaleString('en-US', { month: 'short' })} ${day}`,
+          event,
+          yourRate,
+          compRates
+        });
+      }
+
+      return {
+        property,
+        month: getMonthLabel(monthValue),
+        dates,
+        comps: compBase
+      };
+    }
+
+    let currentData = buildMonthData('2026-05');
 
     let map;
     let markers = [];
@@ -419,8 +475,14 @@
         const isYou = index === 0;
         const card = document.createElement('div');
         card.className = `rounded-3xl border overflow-hidden bg-white ${isYou ? 'border-slate-900' : 'border-slate-200'}`;
+        const imageBlock = c.image
+          ? `<img src="${c.image}" alt="${c.title}" class="w-full h-52 object-cover" />`
+          : `<div class="w-full h-52 bg-slate-100 flex items-center justify-center text-slate-400 text-sm">Real listing image will load here</div>`;
+        const linkBlock = c.listingUrl
+          ? `<a href="${c.listingUrl}" target="_blank" class="inline-block w-full text-center px-4 py-3 rounded-2xl bg-slate-900 text-white font-medium">Open Listing</a>`
+          : `<div class="w-full text-center px-4 py-3 rounded-2xl bg-slate-100 text-slate-400 font-medium">Comp link pending</div>`;
         card.innerHTML = `
-          <img src="${c.image}" alt="${c.title}" class="w-full h-52 object-cover" />
+          ${imageBlock}
           <div class="p-4 space-y-3">
             <div class="flex items-start justify-between gap-3">
               <div>
@@ -436,7 +498,7 @@
               <span class="px-2 py-1 rounded-full bg-slate-100">${c.beachType}</span>
               <span class="px-2 py-1 rounded-full bg-slate-100">${c.selfCheckIn ? 'Self check-in' : 'No self check-in'}</span>
             </div>
-            <a href="${c.listingUrl}" target="_blank" class="inline-block w-full text-center px-4 py-3 rounded-2xl bg-slate-900 text-white font-medium">Open Listing</a>
+            ${linkBlock}
           </div>
         `;
         root.appendChild(card);
@@ -495,22 +557,26 @@
       markers.push(youMarker);
 
       data.comps.forEach(c => {
+        const linkHtml = c.listingUrl ? `<a href="${c.listingUrl}" target="_blank">Open listing</a>` : 'Comp link pending';
         const marker = L.marker([c.lat, c.lng]).addTo(map)
-          .bindPopup(`<b>${c.title}</b><br>${c.distance} mi<br><a href="${c.listingUrl}" target="_blank">Open listing</a>`);
+          .bindPopup(`<b>${c.title}</b><br>${c.distance} mi<br>${linkHtml}`);
         markers.push(marker);
       });
     }
 
     function loadSample() {
-      renderSummary(sampleData);
-      renderDecisionTable(sampleData);
-      renderCalendarStrip(sampleData);
-      renderCompCards(sampleData);
-      initMap(sampleData);
-      showDateDetails(sampleData, 0);
+      const monthValue = document.getElementById('monthPicker').value;
+      currentData = buildMonthData(monthValue);
+      renderSummary(currentData);
+      renderDecisionTable(currentData);
+      renderCalendarStrip(currentData);
+      renderCompCards(currentData);
+      initMap(currentData);
+      showDateDetails(currentData, 0);
     }
 
     document.getElementById('loadSampleBtn').addEventListener('click', loadSample);
+    document.getElementById('monthPicker').addEventListener('change', loadSample);
     document.getElementById('toggleDetailsBtn').addEventListener('click', () => {
       detailsVisible = !detailsVisible;
       document.getElementById('compCardsSection').style.display = detailsVisible ? 'block' : 'none';
