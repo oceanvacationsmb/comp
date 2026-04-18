@@ -233,7 +233,10 @@ async function searchAirbnbComps(page, subject, checkIn, checkOut, radiusMiles =
 }
 
 async function getNightlyCompSnapshot(listingUrl, month) {
-  const browser = await chromium.launch({ headless: true });
+  const browser = await chromium.launch({
+  headless: true,
+  args: ["--no-sandbox", "--disable-setuid-sandbox"]
+});
   const context = await browser.newContext({
     userAgent:
       "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124 Safari/537.36"
