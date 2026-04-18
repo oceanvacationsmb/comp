@@ -543,11 +543,9 @@
     function initMap(data) {
       if (!map) {
         map = L.map('map').setView([data.property.lat, data.property.lng], 14);
-        L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        L.tileLayer('https://a.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png', {
   maxZoom: 19,
-  attribution: '&copy; OpenStreetMap contributors',
-  crossOrigin: true,
-  referrerPolicy: 'strict-origin-when-cross-origin'
+  attribution: '&copy; OpenStreetMap contributors'
 }).addTo(map);
       }
 
