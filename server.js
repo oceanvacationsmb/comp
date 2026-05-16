@@ -4,7 +4,6 @@ import fileUpload from "express-fileupload";
 import dotenv from "dotenv";
 import { Dropbox } from "dropbox";
 import fetch from "node-fetch";
-import nodemailer from "nodemailer";
 
 dotenv.config();
 
@@ -23,14 +22,6 @@ app.use(express.static("."));
 const dbx = new Dropbox({
   accessToken: process.env.DROPBOX_ACCESS_TOKEN,
   fetch
-});
-
-const transporter = nodemailer.createTransport({
-  service: "gmail",
-  auth: {
-    user: process.env.EMAIL_TO,
-    pass: process.env.GMAIL_APP_PASSWORD
-  }
 });
 
 app.post("/submit-application", async (req, res) => {
@@ -75,23 +66,6 @@ app.post("/submit-application", async (req, res) => {
         });
       }
     }
-
-    await transporter.sendMail({
-      from: process.env.EMAIL_TO,
-      to: process.env.EMAIL_TO,
-      subject: "New Rental Application Submitted",
-      text:
-`A new rental application was submitted.
-
-Applicant:
-${applicantName}
-
-Property:
-${property}
-
-Dropbox Folder:
-${folderName}`
-    });
 
     res.json({
       success: true
