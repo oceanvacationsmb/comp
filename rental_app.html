@@ -12,7 +12,7 @@
     }
 
     .form-box {
-      max-width: 800px;
+      max-width: 850px;
       margin: auto;
       background: white;
       padding: 25px;
@@ -73,6 +73,34 @@
       border-radius: 8px;
       background: #fafafa;
     }
+
+    .disclaimer {
+      background: #fff8dc;
+      border: 1px solid #e0c36a;
+      padding: 15px;
+      border-radius: 8px;
+      margin-top: 20px;
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    .checkbox-row {
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+      margin-top: 15px;
+    }
+
+    .checkbox-row input {
+      width: auto;
+      margin-top: 4px;
+    }
+
+    .last4 {
+      font-size: 13px;
+      color: #333;
+      margin-top: 5px;
+    }
   </style>
 </head>
 
@@ -82,7 +110,12 @@
 
   <h2>Rental Application</h2>
 
-  <form action="https://formsubmit.co/oceanvacationsmb@gmail.com" method="POST" onsubmit="return validateForm()">
+  <form 
+    action="https://formsubmit.co/oceanvacationsmb@gmail.com" 
+    method="POST" 
+    enctype="multipart/form-data"
+    onsubmit="return validateForm()"
+  >
 
     <input type="hidden" name="_subject" value="New Tenant Application">
     <input type="hidden" name="_captcha" value="false">
@@ -106,22 +139,6 @@
     >
 
     <div id="occupantsBox"></div>
-
-    <label>
-      Pets?
-      <br>
-      <small>Subject to HOA approval. Some HOA/properties do not allow pets.</small>
-    </label>
-
-    <select name="Pets" onchange="togglePetsInfo(this)">
-      <option>No</option>
-      <option>Yes</option>
-    </select>
-
-    <div id="petsInfo" style="display:none;">
-      <label>Pet Details</label>
-      <textarea name="Pet Details" rows="3" placeholder="Type, breed, weight, age"></textarea>
-    </div>
 
     <label>Have you ever been evicted?</label>
     <select name="Evicted Before" onchange="toggleEvictionInfo(this)" required>
@@ -162,6 +179,26 @@
 
     <label>Current Landlord Phone</label>
     <input type="tel" name="Current Landlord Phone">
+
+    <div class="disclaimer">
+      <strong>Credit Check and Background Check Authorization</strong>
+      <br><br>
+      By submitting this application, applicant authorizes the landlord, property manager, owner, or authorized representative to verify the information provided, contact current and previous landlords, verify employment and income, review uploaded documents, and perform a credit check, background check, eviction history search, criminal history search, and rental history verification as part of the rental application process.
+      <br><br>
+      Applicant understands that approval is not guaranteed and may depend on income, credit, background, rental history, owner approval, HOA/property rules, and other screening requirements.
+    </div>
+
+    <div class="checkbox-row">
+      <input type="checkbox" name="Credit and Background Check Agreement" value="Agreed" required>
+      <label>I agree and authorize credit check, background check, rental history verification, employment verification, and income verification.</label>
+    </div>
+
+    <label>Upload Credit Report from Credit Karma or Similar</label>
+    <input 
+      type="file" 
+      name="Credit Report Upload"
+      accept="image/*,.pdf"
+    >
 
     <label>Additional Information</label>
     <textarea name="Additional Information" rows="4"></textarea>
@@ -234,7 +271,14 @@ function createApplicantFields(number, askRelationship) {
           name="Applicant ${number} SSN"
           placeholder="XXX-XX-XXXX"
           autocomplete="off"
+          oninput="showLastFour(${number})"
         >
+
+        <input type="hidden" id="ssnLast4${number}" name="Applicant ${number} SSN Last 4">
+
+        <div class="last4" id="last4Display${number}">
+          Last 4: 
+        </div>
 
         <label>Retype Social Security Number</label>
         <input
@@ -265,6 +309,13 @@ function createApplicantFields(number, askRelationship) {
           id="retypeEmail${number}"
           name="Applicant ${number} Retype Email"
           autocomplete="off"
+        >
+
+        <label>Upload Photo ID</label>
+        <input 
+          type="file" 
+          name="Applicant ${number} Photo ID"
+          accept="image/*,.pdf"
         >
 
         <label>Does this applicant have income?</label>
@@ -300,6 +351,13 @@ function createApplicantFields(number, askRelationship) {
 
           <label>How long employed?</label>
           <input type="text" name="Applicant ${number} Employment Length">
+
+          <label>Upload Proof of Income</label>
+          <input 
+            type="file" 
+            name="Applicant ${number} Proof of Income"
+            accept="image/*,.pdf"
+          >
 
         </div>
 
@@ -350,6 +408,13 @@ function createOccupantFields() {
             <option>Yes</option>
           </select>
 
+          <label>Upload Photo ID</label>
+          <input 
+            type="file" 
+            name="Other Occupant ${i} Photo ID"
+            accept="image/*,.pdf"
+          >
+
           <label>Does this person have income?</label>
           <select name="Other Occupant ${i} Has Income" onchange="toggleOtherOccupantIncome(this, ${i})">
             <option value="">Select</option>
@@ -368,6 +433,13 @@ function createOccupantFields() {
             <label>Monthly Income</label>
             <input type="text" name="Other Occupant ${i} Monthly Income">
 
+            <label>Upload Proof of Income</label>
+            <input 
+              type="file" 
+              name="Other Occupant ${i} Proof of Income"
+              accept="image/*,.pdf"
+            >
+
           </div>
 
         </div>
@@ -375,6 +447,14 @@ function createOccupantFields() {
       </div>
     `;
   }
+}
+
+function showLastFour(number) {
+  const ssn = document.getElementById("ssn" + number).value.replace(/\D/g, "");
+  const last4 = ssn.length >= 4 ? ssn.slice(-4) : "";
+  
+  document.getElementById("last4Display" + number).innerText = "Last 4: " + last4;
+  document.getElementById("ssnLast4" + number).value = last4;
 }
 
 function toggleLeaseInfo(select, number) {
@@ -399,11 +479,6 @@ function toggleAdultChildInfo(select, number) {
 
 function toggleOtherOccupantIncome(select, number) {
   const section = document.getElementById("otherIncomeInfo" + number);
-  section.style.display = select.value === "Yes" ? "block" : "none";
-}
-
-function togglePetsInfo(select) {
-  const section = document.getElementById("petsInfo");
   section.style.display = select.value === "Yes" ? "block" : "none";
 }
 
