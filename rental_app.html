@@ -1,143 +1,32 @@
-<!DOCTYPE html>
-<html>
-<head>
-  <title>Rental Application</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      background: #f4f4f4;
-      padding: 20px;
-    }
-
-    .form-box {
-      max-width: 650px;
-      margin: auto;
-      background: white;
-      padding: 25px;
-      border-radius: 10px;
-      box-shadow: 0 0 10px #ccc;
-    }
-
-    h2 {
-      text-align: center;
-    }
-
-    label {
-      font-weight: bold;
-      margin-top: 12px;
-      display: block;
-    }
-
-    input, textarea, select {
-      width: 100%;
-      padding: 10px;
-      margin-top: 5px;
-      border: 1px solid #ccc;
-      border-radius: 6px;
-      box-sizing: border-box;
-    }
-
-    button {
-      width: 100%;
-      margin-top: 20px;
-      padding: 14px;
-      background: #0077cc;
-      color: white;
-      border: none;
-      border-radius: 6px;
-      font-size: 18px;
-      cursor: pointer;
-    }
-
-    button:hover {
-      background: #005fa3;
-    }
-  </style>
-</head>
-
-<body>
-
-<div class="form-box">
-  <h2>Rental Application</h2>
-
-  <form action="https://formsubmit.co/oceanvacationsmb@gmail.com" method="POST">
-
-    <input type="hidden" name="_subject" value="New Tenant Application">
-    <input type="hidden" name="_captcha" value="false">
-
-    <label>Full Name</label>
-    <input type="text" name="Full Name" required>
-
-    <label>Email</label>
-    <input type="email" name="Email" required>
-
-    <label>Phone Number</label>
-    <input type="tel" name="Phone Number" required>
-
-   <label>Date of Birth</label>
-<input type="date" name="Date of Birth">
-
-<label>Social Security Number</label>
-<input type="text" name="Social Security Number" placeholder="XXX-XX-XXXX">
-
-    <label>Current Address</label>
-    <textarea name="Current Address" rows="3" required></textarea>
-
-    <label>Current Landlord Name</label>
-    <input type="text" name="Current Landlord Name">
-
-    <label>Current Landlord Phone</label>
-    <input type="tel" name="Current Landlord Phone">
-
-    <label>Employment Status</label>
-    <select name="Employment Status" required>
-      <option value="">Select</option>
-      <option>Employed</option>
-      <option>Self Employed</option>
-      <option>Unemployed</option>
-      <option>Student</option>
-      <option>Retired</option>
-    </select>
-
-    <label>Employer Name</label>
-    <input type="text" name="Employer Name">
-
-    <label>Employer Phone</label>
-    <input type="tel" name="Employer Phone">
-
-    <label>Monthly Income</label>
-    <input type="text" name="Monthly Income">
-
-    <label>Desired Move In Date</label>
-    <input type="date" name="Desired Move In Date">
-
-    <label>Number of Occupants</label>
-    <input type="number" name="Number of Occupants">
-
-    <label>Pets? (Subject to HOA approval. Some HOA/properties do not allow pets.)</label>
-<select name="Pets">
+<label>Have you ever been evicted?</label>
+<select name="Evicted Before" onchange="toggleEvictionInfo(this)">
+  <option value="">Select</option>
   <option>No</option>
   <option>Yes</option>
 </select>
 
-    <label>If pets, describe</label>
-    <textarea name="Pet Details" rows="3"></textarea>
+<div id="evictionInfo" style="display:none;">
+  <label>When were you evicted?</label>
+  <input type="text" name="Eviction Date">
 
-    <label>Have you ever been evicted?</label>
-    <select name="Evicted Before">
-      <option>No</option>
-      <option>Yes</option>
-    </select>
+  <label>Reason for eviction</label>
+  <textarea name="Eviction Reason" rows="3"></textarea>
 
-    <label>Additional Information</label>
-    <textarea name="Additional Information" rows="4"></textarea>
+  <label>Was the balance paid?</label>
+  <select name="Eviction Balance Paid">
+    <option value="">Select</option>
+    <option>Yes</option>
+    <option>No</option>
+    <option>Payment plan</option>
+  </select>
 
-    <button type="submit">Submit Application</button>
-
-  </form>
+  <label>Additional eviction details</label>
+  <textarea name="Eviction Additional Details" rows="3"></textarea>
 </div>
 
-</body>
-</html>
+<script>
+function toggleEvictionInfo(select) {
+  const section = document.getElementById("evictionInfo");
+  section.style.display = select.value === "Yes" ? "block" : "none";
+}
+</script>
