@@ -24,9 +24,7 @@ const dbx = new Dropbox({
   fetch
 });
 
-const resend = new Resend(
-  process.env.RESEND_API_KEY
-);
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 const PROPERTIES_PATH = "/System/properties.json";
 const APPLICATIONS_PATH = "/System/applications.json";
@@ -204,23 +202,37 @@ app.delete("/api/properties/:id", checkAdminPassword, async (req, res) => {
   });
 });
 
-applications.push(newApplication);
+app.post("/api/application-links", checkAdminPassword, async (req, res) => {
+  const applications = await readDropboxJson(APPLICATIONS_PATH);
 
-await writeDropboxJson(
-  APPLICATIONS_PATH,
-  applications
-);
+  const code = makeCode();
 
-const link =
+  const newApplication = {
+    code,
+    propertyId: req.body.propertyId || "",
+    propertyName: req.body.propertyName || "",
+    address: req.body.address || "",
+    tenantEmail: req.body.tenantEmail || "",
+    rent: req.body.rent || "",
+    availableDate: req.body.availableDate || "",
+    deposit: req.body.deposit || "",
+    petsAllowed: req.body.petsAllowed || "No",
+    petDeposit: req.body.petDeposit || "",
+    notes: req.body.notes || "",
+    status: "Open",
+    createdAt: new Date().toISOString()
+  };
 
-`https://oceanvacationsmb.github.io/rentapp/apply.html?code=${code}`;
+  applications.push(newApplication);
 
-let petText = "";
+  await writeDropboxJson(APPLICATIONS_PATH, applications);
 
-if(newApplication.petsAllowed !== "No"){
+  const link = `https://oceanvacationsmb.github.io/rentapp/apply.html?code=${code}`;
 
-  petText =
+  let petText = "";
 
+  if (newApplication.petsAllowed !== "No") {
+    petText =
 `Pets:
 ${newApplication.petsAllowed}
 
@@ -228,25 +240,18 @@ Pet Deposit / Pet Rent:
 ${newApplication.petDeposit || "N/A"}
 
 `;
-}
+  }
 
-if(newApplication.tenantEmail){
+  let emailSent = false;
+  let emailError = "";
 
-  try {
-
-    await resend.emails.send({
-
-      from:
-        process.env.FROM_EMAIL,
-
-      to:
-        newApplication.tenantEmail,
-
-      subject:
-        "Rental Application",
-
-      text:
-
+  if (newApplication.tenantEmail) {
+    try {
+      const result = await resend.emails.send({
+        from: process.env.FROM_EMAIL || "onboarding@resend.dev",
+        to: newApplication.tenantEmail,
+        subject: "Rental Application",
+        text:
 `Hi,
 
 Please complete the rental application using this link:
@@ -269,23 +274,23 @@ Security Deposit:
 $${newApplication.deposit}
 
 ${petText}Thank you`
-    });
+      });
 
-    console.log("EMAIL SENT");
+      console.log("EMAIL SENT:", result);
+      emailSent = true;
 
-  } catch(error){
-
-    console.log(
-      "EMAIL ERROR:",
-      error
-    );
+    } catch (error) {
+      console.log("EMAIL ERROR:", error);
+      emailError = error.message || JSON.stringify(error);
+    }
   }
-}
 
-res.json({
-  success: true,
-  application: newApplication
-});
+  res.json({
+    success: true,
+    application: newApplication,
+    emailSent,
+    emailError
+  });
 });
 
 app.get("/api/application/:code", async (req, res) => {
