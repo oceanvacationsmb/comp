@@ -51,17 +51,9 @@
       font-size:15px;
     }
 
-    .danger{
-      background:#c62828;
-    }
-
-    .gray{
-      background:#777;
-    }
-
-    .green{
-      background:#2e7d32;
-    }
+    .danger{background:#c62828;}
+    .gray{background:#777;}
+    .green{background:#2e7d32;}
 
     .row{
       display:grid;
@@ -77,9 +69,7 @@
       margin-top:15px;
     }
 
-    .hidden{
-      display:none;
-    }
+    .hidden{display:none;}
 
     .result{
       background:#f1f1f1;
@@ -230,7 +220,7 @@
     <label>Notes</label>
     <textarea id="appNotes" rows="4"></textarea>
 
-    <button class="green" onclick="createApplicationLink(event)">Send Email Invite / Generate Link</button>
+    <button class="green" onclick="createApplicationLink(event)">Generate Link</button>
 
     <div class="result hidden" id="linkResult">
       <h3>Application Link Created</h3>
@@ -476,7 +466,6 @@ function selectProperty(id){
   if(!property) return;
 
   document.getElementById("propertyDropdown").value = id;
-
   document.getElementById("tenantBox").classList.remove("hidden");
 
   document.getElementById("selectedPropertyId").value = property.id;
@@ -517,6 +506,8 @@ function selectProperty(id){
 }
 
 async function createApplicationLink(event){
+  const button = event.target;
+
   const propertyId = document.getElementById("selectedPropertyId").value;
   const property = properties.find(p => p.id === propertyId);
 
@@ -526,12 +517,6 @@ async function createApplicationLink(event){
   }
 
   const tenantEmail = document.getElementById("tenantEmail").value;
-
-  if(!tenantEmail){
-    alert("Tenant email is required");
-    return;
-  }
-
   const petsAllowed = property.defaultPetsAllowed || "No";
 
   const body = {
@@ -548,9 +533,8 @@ async function createApplicationLink(event){
   };
 
   try {
-    const button = event.target;
     button.disabled = true;
-    button.innerText = "Sending...";
+    button.innerText = "Generating...";
 
     const data = await api("/api/application-links", {
       method:"POST",
@@ -606,18 +590,14 @@ $${application.deposit}
 
 ${petText}Thank you`;
 
-    alert("Application link created and email invite sent if Gmail is configured correctly.");
-
-    button.disabled = false;
-    button.innerText = "Send Email Invite / Generate Link";
+    alert("Application link created.");
 
   } catch(error) {
-    alert("Something failed. Check Render logs or Gmail settings.");
-
-    const button = event.target;
-    button.disabled = false;
-    button.innerText = "Send Email Invite / Generate Link";
+    alert("Failed to create application link.");
   }
+
+  button.disabled = false;
+  button.innerText = "Generate Link";
 }
 
 function copyLink(){
