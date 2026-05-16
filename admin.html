@@ -1,56 +1,863 @@
-<div class="row">
+<!DOCTYPE html>
+<html>
+<head>
 
-  <div>
+  <title>Rental Application Admin</title>
 
-    <label>Default Rent</label>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
 
-    <input
-      type="text"
-      id="defaultRent"
-    >
+  <style>
 
-  </div>
+    body{
+      font-family:Arial;
+      background:#f4f4f4;
+      padding:20px;
+    }
 
-  <div>
+    .box{
+      max-width:1000px;
+      margin:auto;
+      background:white;
+      padding:25px;
+      border-radius:10px;
+      box-shadow:0 0 10px #ccc;
+      margin-bottom:25px;
+    }
 
-    <label>Default Deposit</label>
+    h2,h3{
+      margin-top:0;
+    }
 
-    <input
-      type="text"
-      id="defaultDeposit"
-    >
+    label{
+      font-weight:bold;
+      display:block;
+      margin-top:12px;
+    }
 
-  </div>
+    input,select,textarea{
+      width:100%;
+      padding:10px;
+      margin-top:5px;
+      border-radius:6px;
+      border:1px solid #ccc;
+      box-sizing:border-box;
+    }
 
-</div>
+    button{
+      padding:12px;
+      background:#0077cc;
+      color:white;
+      border:none;
+      border-radius:6px;
+      cursor:pointer;
+      margin-top:12px;
+      font-size:15px;
+    }
 
-<label>Available Date</label>
+    .danger{
+      background:#c62828;
+    }
 
-<input
-  type="date"
-  id="defaultAvailableDate"
->
+    .gray{
+      background:#777;
+    }
 
-<label>Pets Allowed</label>
+    .row{
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:15px;
+    }
 
-<select
-  id="defaultPetsAllowed"
-  onchange="togglePetDeposit()"
->
+    .card{
+      border:1px solid #ccc;
+      background:#fafafa;
+      padding:15px;
+      border-radius:8px;
+      margin-top:15px;
+    }
 
-  <option>No</option>
-  <option>Yes</option>
-  <option>Subject To Approval</option>
+    .hidden{
+      display:none;
+    }
 
-</select>
+    .result{
+      background:#f1f1f1;
+      padding:15px;
+      border-radius:8px;
+      margin-top:20px;
+    }
 
-<div id="petDepositBox">
+    textarea.message{
+      height:180px;
+    }
 
-  <label>Pet Deposit / Pet Rent</label>
+  </style>
+
+</head>
+
+<body>
+
+<div class="box" id="loginBox">
+
+  <h2>Admin Login</h2>
+
+  <label>Password</label>
 
   <input
-    type="text"
-    id="defaultPetDeposit"
+    type="password"
+    id="adminPassword"
   >
 
+  <button onclick="login()">
+    Login
+  </button>
+
 </div>
+
+<div id="adminArea" class="hidden">
+
+  <div class="box">
+
+    <h2>Rental Application Dashboard</h2>
+
+    <button onclick="showAddProperty()">
+      Add New Property
+    </button>
+
+    <button class="gray" onclick="loadProperties()">
+      Refresh Properties
+    </button>
+
+  </div>
+
+  <div class="box hidden" id="propertyFormBox">
+
+    <h3 id="propertyFormTitle">
+      Add Property
+    </h3>
+
+    <input type="hidden" id="propertyId">
+
+    <div class="row">
+
+      <div>
+
+        <label>Property Name</label>
+
+        <input
+          type="text"
+          id="propertyName"
+        >
+
+      </div>
+
+      <div>
+
+        <label>Property Address</label>
+
+        <input
+          type="text"
+          id="address"
+        >
+
+      </div>
+
+    </div>
+
+    <div class="row">
+
+      <div>
+
+        <label>Default Rent</label>
+
+        <input
+          type="text"
+          id="defaultRent"
+        >
+
+      </div>
+
+      <div>
+
+        <label>Default Deposit</label>
+
+        <input
+          type="text"
+          id="defaultDeposit"
+        >
+
+      </div>
+
+    </div>
+
+    <label>Available Date</label>
+
+    <input
+      type="date"
+      id="defaultAvailableDate"
+    >
+
+    <label>Pets Allowed</label>
+
+    <select
+      id="defaultPetsAllowed"
+      onchange="togglePetDeposit()"
+    >
+
+      <option>No</option>
+      <option>Yes</option>
+      <option>Subject To Approval</option>
+
+    </select>
+
+    <div id="petDepositBox">
+
+      <label>Pet Deposit / Pet Rent</label>
+
+      <input
+        type="text"
+        id="defaultPetDeposit"
+      >
+
+    </div>
+
+    <label>Notes</label>
+
+    <textarea
+      id="notes"
+      rows="4"
+    ></textarea>
+
+    <button onclick="saveProperty()">
+      Save Property
+    </button>
+
+    <button
+      class="gray"
+      onclick="cancelPropertyForm()"
+    >
+      Cancel
+    </button>
+
+  </div>
+
+  <div class="box">
+
+    <h3>Properties</h3>
+
+    <div id="propertiesList"></div>
+
+  </div>
+
+  <div class="box hidden" id="applicationBox">
+
+    <h3>Create Application Link</h3>
+
+    <input
+      type="hidden"
+      id="selectedPropertyId"
+    >
+
+    <label>Selected Property</label>
+
+    <input
+      type="text"
+      id="selectedPropertyName"
+      readonly
+    >
+
+    <label>Tenant Email</label>
+
+    <input
+      type="email"
+      id="tenantEmail"
+    >
+
+    <div class="row">
+
+      <div>
+
+        <label>Rent</label>
+
+        <input
+          type="text"
+          id="appRent"
+        >
+
+      </div>
+
+      <div>
+
+        <label>Deposit</label>
+
+        <input
+          type="text"
+          id="appDeposit"
+        >
+
+      </div>
+
+    </div>
+
+    <div class="row">
+
+      <div>
+
+        <label>Pets Allowed</label>
+
+        <select id="appPetsAllowed">
+
+          <option>No</option>
+          <option>Yes</option>
+          <option>Subject To Approval</option>
+
+        </select>
+
+      </div>
+
+      <div id="appPetDepositBox">
+
+        <label>Pet Deposit / Pet Rent</label>
+
+        <input
+          type="text"
+          id="appPetDeposit"
+        >
+
+      </div>
+
+    </div>
+
+    <label>Notes</label>
+
+    <textarea
+      id="appNotes"
+      rows="4"
+    ></textarea>
+
+    <button onclick="createApplicationLink()">
+      Generate Application Link
+    </button>
+
+    <div class="result hidden" id="linkResult">
+
+      <h3>Application Link Created</h3>
+
+      <p><b>Code:</b></p>
+
+      <div id="generatedCode"></div>
+
+      <p><b>Link:</b></p>
+
+      <div id="generatedLink"></div>
+
+      <button onclick="copyLink()">
+        Copy Link
+      </button>
+
+      <p><b>Message:</b></p>
+
+      <textarea
+        id="tenantMessage"
+        class="message"
+        readonly
+      ></textarea>
+
+      <button onclick="copyMessage()">
+        Copy Message
+      </button>
+
+    </div>
+
+  </div>
+
+</div>
+
+<script>
+
+const API_BASE =
+  "https://rentapp-0jgt.onrender.com";
+
+let adminPassword = "";
+let properties = [];
+let lastGeneratedLink = "";
+
+function login(){
+
+  adminPassword =
+    document.getElementById("adminPassword").value;
+
+  if(!adminPassword){
+
+    alert("Enter password");
+    return;
+  }
+
+  document.getElementById("loginBox")
+    .classList.add("hidden");
+
+  document.getElementById("adminArea")
+    .classList.remove("hidden");
+
+  loadProperties();
+}
+
+async function api(path, options = {}){
+
+  const response = await fetch(
+    API_BASE + path,
+    {
+      method:
+        options.method || "GET",
+
+      headers:{
+        "Content-Type":"application/json",
+        "x-admin-password":adminPassword
+      },
+
+      body:
+        options.body || null
+    }
+  );
+
+  const data =
+    await response.json();
+
+  if(!data.success){
+
+    alert(data.error || "API Error");
+
+    throw new Error(
+      data.error || "API Error"
+    );
+  }
+
+  return data;
+}
+
+function togglePetDeposit(){
+
+  const petsAllowed =
+    document.getElementById("defaultPetsAllowed").value;
+
+  const box =
+    document.getElementById("petDepositBox");
+
+  if(petsAllowed === "No"){
+
+    box.style.display = "none";
+
+    document.getElementById("defaultPetDeposit").value = "";
+
+  }else{
+
+    box.style.display = "block";
+  }
+}
+
+function toggleAppPetDeposit(){
+
+  const petsAllowed =
+    document.getElementById("appPetsAllowed").value;
+
+  const box =
+    document.getElementById("appPetDepositBox");
+
+  if(petsAllowed === "No"){
+
+    box.style.display = "none";
+
+    document.getElementById("appPetDeposit").value = "";
+
+  }else{
+
+    box.style.display = "block";
+  }
+}
+
+function showAddProperty(){
+
+  document.getElementById("propertyFormBox")
+    .classList.remove("hidden");
+
+  document.getElementById("propertyFormTitle")
+    .innerText = "Add Property";
+
+  document.getElementById("propertyId").value = "";
+  document.getElementById("propertyName").value = "";
+  document.getElementById("address").value = "";
+  document.getElementById("defaultRent").value = "";
+  document.getElementById("defaultDeposit").value = "";
+  document.getElementById("defaultAvailableDate").value = "";
+  document.getElementById("defaultPetsAllowed").value = "No";
+  document.getElementById("defaultPetDeposit").value = "";
+  document.getElementById("notes").value = "";
+
+  togglePetDeposit();
+}
+
+function cancelPropertyForm(){
+
+  document.getElementById("propertyFormBox")
+    .classList.add("hidden");
+}
+
+async function loadProperties(){
+
+  const data =
+    await api("/api/properties");
+
+  properties =
+    data.properties || [];
+
+  renderProperties();
+}
+
+function renderProperties(){
+
+  const list =
+    document.getElementById("propertiesList");
+
+  list.innerHTML = "";
+
+  if(properties.length === 0){
+
+    list.innerHTML =
+      "<p>No properties yet.</p>";
+
+    return;
+  }
+
+  properties.forEach(property => {
+
+    const div =
+      document.createElement("div");
+
+    div.className = "card";
+
+    div.innerHTML = `
+
+      <h3>${property.propertyName}</h3>
+
+      <p><b>Address:</b>
+      ${property.address || ""}</p>
+
+      <p><b>Rent:</b>
+      ${property.defaultRent || ""}</p>
+
+      <p><b>Deposit:</b>
+      ${property.defaultDeposit || ""}</p>
+
+      <p><b>Available:</b>
+      ${property.defaultAvailableDate || ""}</p>
+
+      <p><b>Pets:</b>
+      ${property.defaultPetsAllowed || ""}</p>
+
+      <button onclick="selectProperty('${property.id}')">
+        Create Application Link
+      </button>
+
+      <button
+        class="gray"
+        onclick="editProperty('${property.id}')"
+      >
+        Edit
+      </button>
+
+      <button
+        class="danger"
+        onclick="deleteProperty('${property.id}')"
+      >
+        Delete
+      </button>
+
+    `;
+
+    list.appendChild(div);
+  });
+}
+
+async function saveProperty(){
+
+  const id =
+    document.getElementById("propertyId").value;
+
+  const body = {
+
+    propertyName:
+      document.getElementById("propertyName").value,
+
+    address:
+      document.getElementById("address").value,
+
+    defaultRent:
+      document.getElementById("defaultRent").value,
+
+    defaultDeposit:
+      document.getElementById("defaultDeposit").value,
+
+    defaultAvailableDate:
+      document.getElementById("defaultAvailableDate").value,
+
+    defaultPetsAllowed:
+      document.getElementById("defaultPetsAllowed").value,
+
+    defaultPetDeposit:
+      document.getElementById("defaultPetDeposit").value,
+
+    notes:
+      document.getElementById("notes").value
+  };
+
+  if(!body.propertyName){
+
+    alert("Property name required");
+    return;
+  }
+
+  if(id){
+
+    await api(
+      "/api/properties/" + id,
+      {
+        method:"PUT",
+        body:JSON.stringify(body)
+      }
+    );
+
+  }else{
+
+    await api(
+      "/api/properties",
+      {
+        method:"POST",
+        body:JSON.stringify(body)
+      }
+    );
+  }
+
+  cancelPropertyForm();
+
+  loadProperties();
+}
+
+function editProperty(id){
+
+  const property =
+    properties.find(p => p.id === id);
+
+  if(!property) return;
+
+  document.getElementById("propertyFormBox")
+    .classList.remove("hidden");
+
+  document.getElementById("propertyFormTitle")
+    .innerText = "Edit Property";
+
+  document.getElementById("propertyId").value =
+    property.id;
+
+  document.getElementById("propertyName").value =
+    property.propertyName || "";
+
+  document.getElementById("address").value =
+    property.address || "";
+
+  document.getElementById("defaultRent").value =
+    property.defaultRent || "";
+
+  document.getElementById("defaultDeposit").value =
+    property.defaultDeposit || "";
+
+  document.getElementById("defaultAvailableDate").value =
+    property.defaultAvailableDate || "";
+
+  document.getElementById("defaultPetsAllowed").value =
+    property.defaultPetsAllowed || "No";
+
+  document.getElementById("defaultPetDeposit").value =
+    property.defaultPetDeposit || "";
+
+  document.getElementById("notes").value =
+    property.notes || "";
+
+  togglePetDeposit();
+}
+
+async function deleteProperty(id){
+
+  if(!confirm("Delete property?")){
+    return;
+  }
+
+  await api(
+    "/api/properties/" + id,
+    {
+      method:"DELETE"
+    }
+  );
+
+  loadProperties();
+}
+
+function selectProperty(id){
+
+  const property =
+    properties.find(p => p.id === id);
+
+  if(!property) return;
+
+  document.getElementById("applicationBox")
+    .classList.remove("hidden");
+
+  document.getElementById("selectedPropertyId").value =
+    property.id;
+
+  document.getElementById("selectedPropertyName").value =
+    property.propertyName || "";
+
+  document.getElementById("appRent").value =
+    property.defaultRent || "";
+
+  document.getElementById("appDeposit").value =
+    property.defaultDeposit || "";
+
+  document.getElementById("appPetsAllowed").value =
+    property.defaultPetsAllowed || "No";
+
+  document.getElementById("appPetDeposit").value =
+    property.defaultPetDeposit || "";
+
+  document.getElementById("appNotes").value =
+    property.notes || "";
+
+  toggleAppPetDeposit();
+}
+
+async function createApplicationLink(){
+
+  const propertyId =
+    document.getElementById("selectedPropertyId").value;
+
+  const property =
+    properties.find(p => p.id === propertyId);
+
+  if(!property){
+
+    alert("Select property");
+    return;
+  }
+
+  const body = {
+
+    propertyId:
+      property.id,
+
+    propertyName:
+      property.propertyName,
+
+    address:
+      property.address,
+
+    tenantEmail:
+      document.getElementById("tenantEmail").value,
+
+    rent:
+      document.getElementById("appRent").value,
+
+    availableDate:
+      property.defaultAvailableDate,
+
+    deposit:
+      document.getElementById("appDeposit").value,
+
+    petsAllowed:
+      document.getElementById("appPetsAllowed").value,
+
+    petDeposit:
+      document.getElementById("appPetDeposit").value,
+
+    notes:
+      document.getElementById("appNotes").value
+  };
+
+  const data =
+    await api(
+      "/api/application-links",
+      {
+        method:"POST",
+        body:JSON.stringify(body)
+      }
+    );
+
+  const application =
+    data.application;
+
+  lastGeneratedLink =
+    "https://oceanvacationsmb.github.io/rentapp/apply.html?code=" +
+    application.code;
+
+  document.getElementById("linkResult")
+    .classList.remove("hidden");
+
+  document.getElementById("generatedCode")
+    .innerText =
+      application.code;
+
+  document.getElementById("generatedLink")
+    .innerHTML =
+      `<a href="${lastGeneratedLink}" target="_blank">${lastGeneratedLink}</a>`;
+
+  document.getElementById("tenantMessage").value =
+
+`Hi,
+
+Please complete the rental application using this link:
+
+${lastGeneratedLink}
+
+Property:
+${application.propertyName}
+
+Address:
+${application.address}
+
+Rent:
+$${application.rent}
+
+Available Date:
+${application.availableDate}
+
+Security Deposit:
+$${application.deposit}
+
+Pets:
+${application.petsAllowed}
+
+Thank you`;
+}
+
+function copyLink(){
+
+  navigator.clipboard.writeText(
+    lastGeneratedLink
+  );
+
+  alert("Link copied");
+}
+
+function copyMessage(){
+
+  const message =
+    document.getElementById("tenantMessage").value;
+
+  navigator.clipboard.writeText(message);
+
+  alert("Message copied");
+}
+
+</script>
+
+</body>
+</html>
