@@ -1,1 +1,873 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Rental Application</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
 
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f4f4f4;
+      padding: 20px;
+    }
+
+    .form-box {
+      max-width: 900px;
+      margin: auto;
+      background: white;
+      padding: 25px;
+      border-radius: 10px;
+      box-shadow: 0 0 10px #ccc;
+    }
+
+    h2 {
+      text-align: center;
+      margin-bottom: 25px;
+    }
+
+    h3 {
+      margin-top: 0;
+    }
+
+    label {
+      font-weight: bold;
+      display: block;
+      margin-top: 14px;
+    }
+
+    input,
+    textarea,
+    select {
+      width: 100%;
+      padding: 10px;
+      margin-top: 5px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      box-sizing: border-box;
+    }
+
+    button {
+      width: 100%;
+      padding: 15px;
+      background: #0077cc;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      font-size: 18px;
+      margin-top: 20px;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background: #005fa3;
+    }
+
+    .clear-btn {
+      background: #777;
+    }
+
+    .section-box {
+      border: 1px solid #ccc;
+      padding: 15px;
+      margin-top: 20px;
+      border-radius: 8px;
+      background: #fafafa;
+    }
+
+    .property-box {
+      border: 1px solid #0077cc;
+      background: #eef7ff;
+      padding: 15px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+    }
+
+    .disclaimer {
+      background: #fff8dc;
+      border: 1px solid #e0c36a;
+      padding: 15px;
+      border-radius: 8px;
+      margin-top: 20px;
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    .checkbox-row {
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+      margin-top: 15px;
+    }
+
+    .checkbox-row input {
+      width: auto;
+      margin-top: 4px;
+    }
+
+    .error-text {
+      color: red;
+      font-size: 13px;
+      margin-top: 5px;
+      display: none;
+      font-weight: bold;
+    }
+
+    canvas {
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      width: 100%;
+      height: 200px;
+      background: white;
+      touch-action: none;
+    }
+
+    .hidden {
+      display: none;
+    }
+
+    small {
+      color: #666;
+    }
+  </style>
+</head>
+
+<body>
+
+<div class="form-box">
+
+  <h2>Rental Application</h2>
+
+  <div id="loadingBox">
+    Loading application...
+  </div>
+
+  <div id="errorBox" class="hidden" style="color:red; font-weight:bold;"></div>
+
+  <form 
+    id="rentalForm"
+    class="hidden"
+    method="POST"
+    enctype="multipart/form-data"
+    onsubmit="return submitApplication(event)"
+  >
+
+    <input type="hidden" id="applicationCode" name="applicationCode">
+    <input type="hidden" id="propertyNameHidden" name="propertyName">
+    <input type="hidden" id="propertyHidden" name="property">
+    <input type="hidden" id="rentHidden" name="rent">
+    <input type="hidden" id="availableDateHidden" name="availableDate">
+    <input type="hidden" id="depositHidden" name="deposit">
+    <input type="hidden" id="applicationFeeHidden" name="applicationFee">
+    <input type="hidden" id="petsAllowedHidden" name="petsAllowed">
+    <input type="hidden" id="petDepositHidden" name="petDeposit">
+    <input type="hidden" id="notesHidden" name="notes">
+
+    <div class="property-box">
+      <h3>Property Information</h3>
+
+      <p><b>Property:</b> <span id="showPropertyName"></span></p>
+      <p><b>Address:</b> <span id="showAddress"></span></p>
+      <p><b>Rent:</b> $<span id="showRent"></span></p>
+      <p><b>Available Date:</b> <span id="showAvailableDate"></span></p>
+      <p><b>Security Deposit:</b> $<span id="showDeposit"></span></p>
+      <p><b>Application Fee:</b> $<span id="showApplicationFee"></span></p>
+      <p><b>Pets:</b> <span id="showPetsAllowed"></span></p>
+      <p><b>Pet Deposit / Pet Rent:</b> <span id="showPetDeposit"></span></p>
+      <p><b>Notes:</b> <span id="showNotes"></span></p>
+    </div>
+
+    <label>Application Type</label>
+    <select id="applicationType" name="Application Type" onchange="handleApplicationType()" required>
+      <option value="">Select</option>
+      <option value="Solo Applicant">Solo Applicant</option>
+      <option value="Joint Applicants">Joint Applicants</option>
+    </select>
+
+    <div id="applicantsBox"></div>
+
+    <label>Number of Additional Occupants</label>
+    <input 
+      type="number" 
+      id="occupantsCount" 
+      name="Number of Additional Occupants" 
+      min="0"
+      onchange="createOccupantFields()"
+    >
+
+    <div id="occupantsBox"></div>
+
+    <label>Have you ever been evicted?</label>
+    <select name="Evicted Before" onchange="toggleEvictionInfo(this)" required>
+      <option value="">Select</option>
+      <option>No</option>
+      <option>Yes</option>
+    </select>
+
+    <div id="evictionInfo" style="display:none;">
+      <label>When were you evicted?</label>
+      <input type="text" name="Eviction Date">
+
+      <label>Reason for eviction</label>
+      <textarea name="Eviction Reason" rows="3"></textarea>
+
+      <label>Was the balance paid?</label>
+      <select name="Eviction Balance Paid">
+        <option value="">Select</option>
+        <option>Yes</option>
+        <option>No</option>
+        <option>Payment plan</option>
+      </select>
+
+      <label>Additional eviction details</label>
+      <textarea name="Eviction Additional Details" rows="3"></textarea>
+    </div>
+
+    <label>Desired Move In Date</label>
+    <input type="date" name="Desired Move In Date" required>
+
+    <label>Current Address</label>
+    <textarea name="Current Address" rows="3" required></textarea>
+
+    <label>Current Landlord Name</label>
+    <input type="text" name="Current Landlord Name">
+
+    <label>Current Landlord Phone</label>
+    <input type="tel" name="Current Landlord Phone">
+
+    <div class="disclaimer">
+      <strong>Credit Check and Background Check Authorization</strong>
+      <br><br>
+      By submitting this application, applicant authorizes the landlord, property manager, owner, or authorized representative to verify all information provided, contact current and previous landlords, verify employment and income, review uploaded documents, and perform a credit check, background check, eviction history search, criminal history search, and rental history verification as part of the rental application process.
+      <br><br>
+      Applicant understands that approval is not guaranteed and may depend on income, credit, background, rental history, owner approval, HOA/property rules, and other screening requirements.
+    </div>
+
+    <div class="checkbox-row">
+      <input type="checkbox" name="Credit and Background Check Authorization" value="Agreed" required>
+      <label>I authorize credit check, background check, rental verification, employment verification, and income verification.</label>
+    </div>
+
+    <label>Upload Credit Report from Credit Karma or Similar</label>
+    <input type="file" name="Credit Report Upload" accept="image/*,.pdf">
+
+    <label>Additional Information</label>
+    <textarea name="Additional Information" rows="4"></textarea>
+
+    <label>Applicant Signature</label>
+    <canvas id="signaturePad" width="700" height="200"></canvas>
+    <input type="hidden" id="signatureData" name="Applicant Signature">
+
+    <button type="button" class="clear-btn" onclick="clearSignature()">Clear Signature</button>
+
+    <button type="submit" id="submitButton">Submit Application</button>
+
+  </form>
+
+  <div id="successBox" class="hidden" style="background:#e8f5e9; border:1px solid #4caf50; padding:15px; border-radius:8px;">
+    <h3>Application Submitted</h3>
+    <p>Your application was submitted successfully.</p>
+  </div>
+
+</div>
+
+<script>
+let loadedApplication = null;
+
+window.onload = loadApplicationFromCode;
+
+async function loadApplicationFromCode() {
+  const params = new URLSearchParams(window.location.search);
+  const code = params.get("code");
+
+  if (!code) {
+    showError("Missing application code.");
+    return;
+  }
+
+  try {
+    const response = await fetch("/api/application/" + code);
+    const data = await response.json();
+
+    if (!data.success) {
+      showError(data.error || "Application not found.");
+      return;
+    }
+
+    loadedApplication = data.application;
+
+    fillApplicationInfo(loadedApplication);
+
+    document.getElementById("loadingBox").classList.add("hidden");
+    document.getElementById("rentalForm").classList.remove("hidden");
+
+    setupSignaturePad();
+
+  } catch (error) {
+    showError("Could not load application.");
+  }
+}
+
+function showError(message) {
+  document.getElementById("loadingBox").classList.add("hidden");
+  const box = document.getElementById("errorBox");
+  box.innerText = message;
+  box.classList.remove("hidden");
+}
+
+function fillApplicationInfo(app) {
+  document.getElementById("applicationCode").value = app.code || "";
+  document.getElementById("propertyNameHidden").value = app.propertyName || "";
+  document.getElementById("propertyHidden").value = app.propertyName || "";
+  document.getElementById("rentHidden").value = app.rent || "";
+  document.getElementById("availableDateHidden").value = app.availableDate || "";
+  document.getElementById("depositHidden").value = app.deposit || "";
+  document.getElementById("applicationFeeHidden").value = app.applicationFee || "";
+  document.getElementById("petsAllowedHidden").value = app.petsAllowed || "";
+  document.getElementById("petDepositHidden").value = app.petDeposit || "";
+  document.getElementById("notesHidden").value = app.notes || "";
+
+  document.getElementById("showPropertyName").innerText = app.propertyName || "";
+  document.getElementById("showAddress").innerText = app.address || "";
+  document.getElementById("showRent").innerText = app.rent || "";
+  document.getElementById("showAvailableDate").innerText = app.availableDate || "";
+  document.getElementById("showDeposit").innerText = app.deposit || "";
+  document.getElementById("showApplicationFee").innerText = app.applicationFee || "";
+  document.getElementById("showPetsAllowed").innerText = app.petsAllowed || "";
+  document.getElementById("showPetDeposit").innerText = app.petDeposit || "N/A";
+  document.getElementById("showNotes").innerText = app.notes || "N/A";
+}
+
+function handleApplicationType() {
+  const type = document.getElementById("applicationType").value;
+  const box = document.getElementById("applicantsBox");
+
+  box.innerHTML = "";
+
+  if (type === "Solo Applicant") {
+    box.innerHTML = createApplicantFields(1, false);
+  }
+
+  if (type === "Joint Applicants") {
+    box.innerHTML = createApplicantFields(1, false) + createApplicantFields(2, true);
+  }
+}
+
+function createNameFields(prefix, required = true) {
+  return `
+    <label>First Name</label>
+    <input type="text" name="${prefix} First Name" ${required ? "required" : ""}>
+
+    <label>Middle Name</label>
+    <input type="text" name="${prefix} Middle Name">
+
+    <label>Last Name</label>
+    <input type="text" name="${prefix} Last Name" ${required ? "required" : ""}>
+  `;
+}
+
+function incomeSourceOptions() {
+  return `
+    <option value="">Select</option>
+    <option>No Income</option>
+    <option>Employment</option>
+    <option>Self Employed</option>
+    <option>Unemployment</option>
+    <option>Retirement</option>
+    <option>Pension</option>
+    <option>Social Security</option>
+    <option>Disability</option>
+    <option>Child Support</option>
+    <option>Alimony</option>
+    <option>Investments</option>
+    <option>Military Benefits</option>
+    <option>Section 8 / Housing Assistance</option>
+    <option>Student Financial Aid</option>
+    <option>Savings</option>
+    <option>Family Support</option>
+    <option>Rental Income</option>
+    <option>Business Income</option>
+    <option>Other</option>
+  `;
+}
+
+function createApplicantFields(number, askRelationship) {
+  return `
+    <div class="section-box">
+
+      <h3>Applicant ${number}</h3>
+
+      ${createNameFields("Applicant " + number, true)}
+
+      ${askRelationship ? `
+        <label>Relationship to Main Applicant</label>
+        <select name="Applicant ${number} Relationship" onchange="toggleRelationshipInfo(this, ${number})" required>
+          <option value="">Select</option>
+          <option>Spouse</option>
+          <option>Partner</option>
+          <option>Family Member</option>
+          <option>Roommate</option>
+          <option>Other</option>
+        </select>
+
+        <div id="relationshipInfo${number}" style="display:none;">
+          <label>Explain Relationship</label>
+          <input type="text" name="Applicant ${number} Relationship Explanation">
+        </div>
+      ` : ""}
+
+      <input type="hidden" name="Applicant ${number} Signing Lease" value="Yes">
+
+      <label>Social Security Number</label>
+      <input
+        type="text"
+        id="ssn${number}"
+        name="Applicant ${number} SSN"
+        placeholder="XXX-XX-XXXX"
+        autocomplete="off"
+        maxlength="11"
+        required
+        oninput="formatSSN(this); checkSSNMatch(${number})"
+        onblur="maskSSN(this); checkSSNMatch(${number})"
+        onfocus="unmaskSSN(this)"
+      >
+
+      <input type="hidden" id="realSsn${number}" name="Applicant ${number} Real SSN">
+
+      <label>Retype Social Security Number</label>
+      <input
+        type="text"
+        id="retypeSsn${number}"
+        name="Applicant ${number} Retype SSN"
+        placeholder="Retype SSN"
+        autocomplete="off"
+        maxlength="11"
+        required
+        oninput="formatSSN(this); checkSSNMatch(${number})"
+        onblur="maskSSN(this); checkSSNMatch(${number})"
+        onfocus="unmaskSSN(this)"
+      >
+
+      <div id="ssnError${number}" class="error-text">SSN numbers do not match</div>
+
+      <label>Date of Birth</label>
+      <input type="date" name="Applicant ${number} Date of Birth" required>
+
+      <label>Phone Number</label>
+      <input type="tel" name="Applicant ${number} Phone Number" required>
+
+      <label>Email</label>
+      <input
+        type="email"
+        id="email${number}"
+        name="Applicant ${number} Email"
+        autocomplete="off"
+        required
+      >
+
+      <label>Retype Email</label>
+      <input
+        type="email"
+        id="retypeEmail${number}"
+        name="Applicant ${number} Retype Email"
+        autocomplete="off"
+        required
+      >
+
+      <div id="emailError${number}" class="error-text">Emails do not match</div>
+
+      <label>Upload Photo ID</label>
+      <input type="file" name="Applicant ${number} Photo ID" accept="image/*,.pdf" required>
+
+      <label>Source of Income</label>
+      <select name="Applicant ${number} Source of Income" onchange="toggleIncomeInfo(this, ${number})" required>
+        ${incomeSourceOptions()}
+      </select>
+
+      <div id="incomeInfo${number}" style="display:none;">
+        <label>Employer / Income Source Name</label>
+        <input type="text" name="Applicant ${number} Employer or Income Source Name">
+
+        <label>Employer / Source Phone</label>
+        <input type="tel" name="Applicant ${number} Employer or Source Phone">
+
+        <label>Job Position / Income Description</label>
+        <input type="text" name="Applicant ${number} Job Position or Income Description">
+
+        <label>Monthly Income</label>
+        <input type="text" name="Applicant ${number} Monthly Income">
+
+        <label>How long have you received this income?</label>
+        <input type="text" name="Applicant ${number} Income Length">
+
+        <label>Upload Proof of Income</label>
+        <input type="file" name="Applicant ${number} Proof of Income" accept="image/*,.pdf">
+      </div>
+
+    </div>
+  `;
+}
+
+function createOccupantFields() {
+  const count = document.getElementById("occupantsCount").value;
+  const box = document.getElementById("occupantsBox");
+
+  box.innerHTML = "";
+
+  for (let i = 1; i <= count; i++) {
+    box.innerHTML += `
+      <div class="section-box">
+
+        <h3>Additional Occupant ${i}</h3>
+
+        ${createNameFields("Additional Occupant " + i, false)}
+
+        <label>Adult or Child</label>
+        <select name="Additional Occupant ${i} Adult or Child" onchange="toggleAdultChildInfo(this, ${i})" required>
+          <option value="">Select</option>
+          <option>Adult</option>
+          <option>Child</option>
+        </select>
+
+        <label>Relationship to Applicant</label>
+        <select name="Additional Occupant ${i} Relationship" required>
+          <option value="">Select</option>
+          <option>Child</option>
+          <option>Spouse</option>
+          <option>Family Member</option>
+          <option>Roommate</option>
+          <option>Other</option>
+        </select>
+
+        <div id="adultInfo${i}" style="display:none;">
+
+          <label>Upload Photo ID</label>
+          <input type="file" name="Additional Occupant ${i} Photo ID" accept="image/*,.pdf">
+
+          <label>Source of Income</label>
+          <select name="Additional Occupant ${i} Source of Income" onchange="toggleOtherOccupantIncome(this, ${i})">
+            ${incomeSourceOptions()}
+          </select>
+
+          <div id="otherIncomeInfo${i}" style="display:none;">
+            <label>Employer / Income Source Name</label>
+            <input type="text" name="Additional Occupant ${i} Employer or Income Source Name">
+
+            <label>Employer / Source Phone</label>
+            <input type="tel" name="Additional Occupant ${i} Employer or Source Phone">
+
+            <label>Monthly Income</label>
+            <input type="text" name="Additional Occupant ${i} Monthly Income">
+
+            <label>How long have you received this income?</label>
+            <input type="text" name="Additional Occupant ${i} Income Length">
+
+            <label>Upload Proof of Income</label>
+            <input type="file" name="Additional Occupant ${i} Proof of Income" accept="image/*,.pdf">
+          </div>
+
+        </div>
+
+        <div id="childInfo${i}" style="display:none;">
+          <small>Child occupants cannot sign the lease agreement and do not need to upload ID or income documents.</small>
+        </div>
+
+      </div>
+    `;
+  }
+}
+
+function formatSSN(input) {
+  let value = input.value.replace(/\D/g, "");
+
+  if (value.length > 9) value = value.substring(0, 9);
+
+  input.dataset.realValue = value;
+
+  let formatted = value;
+
+  if (value.length > 5) {
+    formatted = value.replace(/(\d{3})(\d{2})(\d+)/, "$1-$2-$3");
+  } else if (value.length > 3) {
+    formatted = value.replace(/(\d{3})(\d+)/, "$1-$2");
+  }
+
+  input.value = formatted;
+
+  if (input.id.startsWith("ssn")) {
+    const number = input.id.replace("ssn", "");
+    document.getElementById("realSsn" + number).value = input.dataset.realValue;
+  }
+}
+
+function maskSSN(input) {
+  const value = input.dataset.realValue || input.value.replace(/\D/g, "");
+
+  if (value.length === 9) {
+    input.value = "XXX-XX-" + value.slice(-4);
+  }
+}
+
+function unmaskSSN(input) {
+  const value = input.dataset.realValue || input.value.replace(/\D/g, "");
+
+  if (value.length === 9) {
+    input.value =
+      value.substring(0,3) + "-" +
+      value.substring(3,5) + "-" +
+      value.substring(5,9);
+  }
+}
+
+function checkSSNMatch(number) {
+  const ssn = document.getElementById("ssn" + number);
+  const retype = document.getElementById("retypeSsn" + number);
+  const error = document.getElementById("ssnError" + number);
+
+  const realSSN = ssn.dataset.realValue || ssn.value.replace(/\D/g, "");
+  const realRetype = retype.dataset.realValue || retype.value.replace(/\D/g, "");
+
+  if (realRetype.length > 0 && realSSN !== realRetype) {
+    error.style.display = "block";
+    retype.style.border = "2px solid red";
+  } else {
+    error.style.display = "none";
+    retype.style.border = "1px solid #ccc";
+  }
+}
+
+function checkEmailMatch(number) {
+  const email = document.getElementById("email" + number);
+  const retype = document.getElementById("retypeEmail" + number);
+  const error = document.getElementById("emailError" + number);
+
+  if (
+    retype.value.length > 0 &&
+    email.value.trim().toLowerCase() !== retype.value.trim().toLowerCase()
+  ) {
+    error.style.display = "block";
+    retype.style.border = "2px solid red";
+  } else {
+    error.style.display = "none";
+    retype.style.border = "1px solid #ccc";
+  }
+}
+
+function toggleIncomeInfo(select, number) {
+  const section = document.getElementById("incomeInfo" + number);
+  const proofInput = section.querySelector('input[type="file"]');
+
+  if (select.value !== "" && select.value !== "No Income") {
+    section.style.display = "block";
+    proofInput.required = true;
+  } else {
+    section.style.display = "none";
+    proofInput.required = false;
+  }
+}
+
+function toggleRelationshipInfo(select, number) {
+  const section = document.getElementById("relationshipInfo" + number);
+  section.style.display = select.value === "Other" ? "block" : "none";
+}
+
+function toggleAdultChildInfo(select, number) {
+  const adultSection = document.getElementById("adultInfo" + number);
+  const childSection = document.getElementById("childInfo" + number);
+
+  if (select.value === "Adult") {
+    adultSection.style.display = "block";
+    childSection.style.display = "none";
+  } else if (select.value === "Child") {
+    adultSection.style.display = "none";
+    childSection.style.display = "block";
+  } else {
+    adultSection.style.display = "none";
+    childSection.style.display = "none";
+  }
+}
+
+function toggleOtherOccupantIncome(select, number) {
+  const section = document.getElementById("otherIncomeInfo" + number);
+  const proofInput = section.querySelector('input[type="file"]');
+
+  if (select.value !== "" && select.value !== "No Income") {
+    section.style.display = "block";
+    proofInput.required = true;
+  } else {
+    section.style.display = "none";
+    proofInput.required = false;
+  }
+}
+
+function toggleEvictionInfo(select) {
+  const section = document.getElementById("evictionInfo");
+  section.style.display = select.value === "Yes" ? "block" : "none";
+}
+
+function validateForm() {
+  const applicationType = document.getElementById("applicationType").value;
+  const totalApplicants = applicationType === "Joint Applicants" ? 2 : 1;
+
+  for (let i = 1; i <= totalApplicants; i++) {
+    const ssn = document.getElementById("ssn" + i);
+    const retypeSsn = document.getElementById("retypeSsn" + i);
+    const email = document.getElementById("email" + i);
+    const retypeEmail = document.getElementById("retypeEmail" + i);
+    const ssnError = document.getElementById("ssnError" + i);
+    const emailError = document.getElementById("emailError" + i);
+
+    const realSSN = ssn.dataset.realValue || ssn.value.replace(/\D/g, "");
+    const realRetypeSSN = retypeSsn.dataset.realValue || retypeSsn.value.replace(/\D/g, "");
+
+    if (realSSN.length !== 9 || realRetypeSSN.length !== 9) {
+      ssn.style.border = "2px solid red";
+      retypeSsn.style.border = "2px solid red";
+      ssnError.innerText = "Please enter a valid 9 digit SSN";
+      ssnError.style.display = "block";
+      alert("Please enter a valid 9 digit SSN for Applicant " + i);
+      return false;
+    }
+
+    if (realSSN !== realRetypeSSN) {
+      retypeSsn.style.border = "2px solid red";
+      ssnError.innerText = "SSN numbers do not match";
+      ssnError.style.display = "block";
+      alert("SSN numbers do not match for Applicant " + i);
+      return false;
+    }
+
+    if (email.value.trim().toLowerCase() !== retypeEmail.value.trim().toLowerCase()) {
+      email.style.border = "2px solid red";
+      retypeEmail.style.border = "2px solid red";
+      emailError.style.display = "block";
+      alert("Emails do not match for Applicant " + i);
+      return false;
+    }
+  }
+
+  if (document.getElementById("signatureData").value === "") {
+    alert("Please sign the application before submitting.");
+    return false;
+  }
+
+  return true;
+}
+
+async function submitApplication(event) {
+  event.preventDefault();
+
+  if (!validateForm()) {
+    return false;
+  }
+
+  const button = document.getElementById("submitButton");
+  button.disabled = true;
+  button.innerText = "Submitting...";
+
+  const form = document.getElementById("rentalForm");
+  const formData = new FormData(form);
+
+  try {
+    const response = await fetch("/submit-application", {
+      method: "POST",
+      body: formData
+    });
+
+    const data = await response.json();
+
+    if (!data.success) {
+      alert(data.error || "Submission failed");
+      button.disabled = false;
+      button.innerText = "Submit Application";
+      return false;
+    }
+
+    form.classList.add("hidden");
+    document.getElementById("successBox").classList.remove("hidden");
+    window.scrollTo(0, 0);
+
+  } catch (error) {
+    alert("Submission failed. Please try again.");
+    button.disabled = false;
+    button.innerText = "Submit Application";
+  }
+
+  return false;
+}
+
+document.addEventListener("input", function(e) {
+  if (e.target.id && e.target.id.startsWith("email")) {
+    const number = e.target.id.replace("email", "");
+    checkEmailMatch(number);
+  }
+
+  if (e.target.id && e.target.id.startsWith("retypeEmail")) {
+    const number = e.target.id.replace("retypeEmail", "");
+    checkEmailMatch(number);
+  }
+});
+
+let canvas;
+let ctx;
+let drawing = false;
+
+function setupSignaturePad() {
+  canvas = document.getElementById("signaturePad");
+  ctx = canvas.getContext("2d");
+
+  canvas.addEventListener("mousedown", startDraw);
+  canvas.addEventListener("mouseup", stopDraw);
+  canvas.addEventListener("mousemove", draw);
+  canvas.addEventListener("mouseleave", stopDraw);
+
+  canvas.addEventListener("touchstart", startDraw);
+  canvas.addEventListener("touchend", stopDraw);
+  canvas.addEventListener("touchmove", draw);
+}
+
+function getPosition(e) {
+  const rect = canvas.getBoundingClientRect();
+  const touch = e.touches ? e.touches[0] : e;
+
+  return {
+    x: (touch.clientX - rect.left) * (canvas.width / rect.width),
+    y: (touch.clientY - rect.top) * (canvas.height / rect.height)
+  };
+}
+
+function startDraw(e) {
+  e.preventDefault();
+  drawing = true;
+  const pos = getPosition(e);
+  ctx.beginPath();
+  ctx.moveTo(pos.x, pos.y);
+}
+
+function stopDraw(e) {
+  if (!drawing) return;
+  e.preventDefault();
+  drawing = false;
+  document.getElementById("signatureData").value = canvas.toDataURL("image/png");
+}
+
+function draw(e) {
+  if (!drawing) return;
+  e.preventDefault();
+
+  const pos = getPosition(e);
+
+  ctx.lineWidth = 2;
+  ctx.lineCap = "round";
+  ctx.strokeStyle = "black";
+  ctx.lineTo(pos.x, pos.y);
+  ctx.stroke();
+}
+
+function clearSignature() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  document.getElementById("signatureData").value = "";
+}
+</script>
+
+</body>
+</html>
