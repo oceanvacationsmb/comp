@@ -92,6 +92,15 @@
       line-height: 1.5;
     }
 
+    .credit-box {
+      background: #fff3e0;
+      border: 1px solid #fb8c00;
+      padding: 15px;
+      border-radius: 8px;
+      margin-top: 20px;
+      line-height: 1.5;
+    }
+
     .checkbox-row {
       display: flex;
       gap: 10px;
@@ -102,6 +111,26 @@
     .checkbox-row input {
       width: auto;
       margin-top: 4px;
+    }
+
+    .income-option {
+      border: 1px solid #ddd;
+      padding: 12px;
+      border-radius: 8px;
+      background: white;
+      margin-top: 10px;
+    }
+
+    .income-option label {
+      margin-top: 0;
+    }
+
+    .income-details {
+      display: none;
+      margin-top: 10px;
+      padding: 10px;
+      background: #f7f7f7;
+      border-radius: 6px;
     }
 
     .error-text {
@@ -129,42 +158,79 @@
       color: #666;
     }
 
-    .income-source-box {
-      border: 1px solid #ddd;
-      background: #fff;
-      padding: 12px;
-      border-radius: 8px;
-      margin-top: 8px;
-    }
-
-    .income-source-row {
+    .popup-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.7);
       display: flex;
+      justify-content: center;
       align-items: center;
-      gap: 10px;
-      margin-top: 10px;
+      z-index: 99999;
     }
 
-    .income-source-row input[type="checkbox"] {
-      width: auto;
-      margin: 0;
+    .popup-box {
+      background: white;
+      width: 90%;
+      max-width: 650px;
+      padding: 25px;
+      border-radius: 12px;
+      max-height: 90vh;
+      overflow: auto;
+      font-family: Arial;
     }
 
-    .income-amount-box {
-      display: none;
-      margin-left: 28px;
-      margin-top: 8px;
+    .popup-box h2 {
+      margin-top: 0;
     }
 
-    .required-note {
-      color: #c62828;
-      font-weight: bold;
-      font-size: 14px;
-      margin-top: 8px;
+    .popup-box button {
+      background: #0077cc;
+      color: white;
+      border: none;
+      padding: 12px 20px;
+      border-radius: 8px;
+      cursor: pointer;
+      margin-top: 15px;
+      font-size: 16px;
     }
   </style>
 </head>
 
 <body>
+
+<div id="creditPopup" class="popup-overlay">
+  <div class="popup-box">
+
+    <h2>Important Credit Report Notice</h2>
+
+    <p>
+      To help speed up the application process and avoid additional screening fees,
+      applicants are required to upload a recent credit report PDF or clear screenshots from one of the following:
+    </p>
+
+    <ul>
+      <li>Credit Karma</li>
+      <li>Experian</li>
+      <li>Equifax</li>
+      <li>TransUnion</li>
+      <li>AnnualCreditReport.com</li>
+    </ul>
+
+    <p>
+      The report must belong to the applicant, show the applicant’s name, and be dated within the last 30 days.
+    </p>
+
+    <p style="color:#c62828;font-weight:bold;">
+      If a recent credit report is not provided, applicants may be required to complete a separate credit/background screening through a third-party provider at an additional cost of approximately $50.
+    </p>
+
+    <button onclick="closeCreditPopup()">I Understand</button>
+
+  </div>
+</div>
 
 <div class="form-box">
 
@@ -197,14 +263,10 @@
     <div class="property-box">
       <h3>Property Information</h3>
 
-      
       <p><b>Address:</b> <span id="showAddress"></span></p>
       <p><b>Rent:</b> $<span id="showRent"></span></p>
       <p><b>Available Date:</b> <span id="showAvailableDate"></span></p>
       <p><b>Security Deposit:</b> $<span id="showDeposit"></span></p>
-      <p><b>Pets:</b> <span id="showPetsAllowed"></span></p>
-      <p><b>Pet Deposit / Pet Rent:</b> <span id="showPetDeposit"></span></p>
-      <p><b>Notes:</b> <span id="showNotes"></span></p>
     </div>
 
     <label>Application Type</label>
@@ -265,6 +327,24 @@
     <label>Current Landlord Phone</label>
     <input type="tel" name="Current Landlord Phone">
 
+    <div class="credit-box">
+      <strong>Credit Report Upload Required</strong>
+      <br><br>
+      Please upload a recent credit report from Credit Karma, Experian, Equifax, TransUnion, or AnnualCreditReport.com.
+      This may help you avoid a separate credit/background screening fee of approximately $50.
+      <br><br>
+      The report must show your name and be dated within the last 30 days.
+    </div>
+
+    <label>Upload Credit Report</label>
+    <input 
+      type="file"
+      name="Credit Report Upload"
+      accept="image/*,.pdf"
+      multiple
+      required
+    >
+
     <div class="disclaimer">
       <strong>Credit Check and Background Check Authorization</strong>
       <br><br>
@@ -278,16 +358,13 @@
       <label>I authorize credit check, background check, rental verification, employment verification, and income verification.</label>
     </div>
 
-    <div class="disclaimer">
-      <strong>Credit Report Upload Required</strong>
-      <br><br>
-      Please upload a recent credit report PDF or clear screenshots from Credit Karma, Experian, Equifax, TransUnion, or AnnualCreditReport.com.
-      <br><br>
-      The report must show the applicant name and should be dated within the last 30 days. Providing this may help avoid a separate credit/background screening fee of approximately $50.
-    </div>
-
-    <label>Upload Credit Report PDF or Screenshots</label>
-    <input type="file" name="Credit Report Upload" accept="image/*,.pdf" required>
+    <label>Additional Documents</label>
+    <input 
+      type="file"
+      name="Additional Documents"
+      accept="image/*,.pdf"
+      multiple
+    >
 
     <label>Additional Information</label>
     <textarea name="Additional Information" rows="4"></textarea>
@@ -346,6 +423,10 @@ async function loadApplicationFromCode() {
   }
 }
 
+function closeCreditPopup(){
+  document.getElementById("creditPopup").style.display = "none";
+}
+
 function showError(message) {
   document.getElementById("loadingBox").classList.add("hidden");
   const box = document.getElementById("errorBox");
@@ -364,15 +445,10 @@ function fillApplicationInfo(app) {
   document.getElementById("petDepositHidden").value = app.petDeposit || "";
   document.getElementById("notesHidden").value = app.notes || "";
 
- document.getElementById("showPropertyName").innerText = "";
-document.getElementById("showAddress").innerText = app.address || "";
-document.getElementById("showRent").innerText = app.rent || "";
-document.getElementById("showAvailableDate").innerText = app.availableDate || "";
-document.getElementById("showDeposit").innerText = app.deposit || "";
-
-document.getElementById("showPetsAllowed").parentElement.style.display = "none";
-document.getElementById("showPetDeposit").parentElement.style.display = "none";
-document.getElementById("showNotes").parentElement.style.display = "none";
+  document.getElementById("showAddress").innerText = app.address || "";
+  document.getElementById("showRent").innerText = app.rent || "";
+  document.getElementById("showAvailableDate").innerText = app.availableDate || "";
+  document.getElementById("showDeposit").innerText = app.deposit || "";
 }
 
 function handleApplicationType() {
@@ -403,61 +479,77 @@ function createNameFields(prefix, required = true) {
   `;
 }
 
-function incomeSourceChecklist(group, number, labelPrefix) {
-  const groupKey = group + number;
+function createIncomeSection(prefix, number) {
+  return `
+    <label>Sources of Income</label>
+    <small>Select all that apply. Each selected income source requires monthly amount and proof upload.</small>
+
+    ${incomeCheckbox(prefix, number, "Employed")}
+    ${incomeCheckbox(prefix, number, "Unemployed")}
+    ${incomeCheckbox(prefix, number, "Disability")}
+    ${incomeCheckbox(prefix, number, "Social Security")}
+  `;
+}
+
+function incomeCheckbox(prefix, number, source) {
+  const safeSource = source.replace(/\s+/g, "");
 
   return `
-    <div class="income-source-box">
-      <p class="required-note">
-        Select all income sources that apply. For every selected source, enter the monthly amount.
-      </p>
-
-      ${incomeSourceRow(group, number, labelPrefix, "Employed")}
-      ${incomeSourceRow(group, number, labelPrefix, "Unemployed")}
-      ${incomeSourceRow(group, number, labelPrefix, "Disability")}
-      ${incomeSourceRow(group, number, labelPrefix, "Social Security")}
-
-      <div id="${group}IncomeDetails${number}" style="display:none;">
-        <label>Upload Proof of Income</label>
+    <div class="income-option">
+      <div class="checkbox-row">
         <input 
-          type="file" 
-          id="${group}Proof${number}" 
-          name="${labelPrefix} Proof of Income" 
+          type="checkbox"
+          id="${prefix}${number}${safeSource}Check"
+          name="${prefix} ${number} Income Source"
+          value="${source}"
+          onchange="toggleIncomeSource('${prefix}', ${number}, '${safeSource}')"
+        >
+        <label for="${prefix}${number}${safeSource}Check">${source}</label>
+      </div>
+
+      <div 
+        id="${prefix}${number}${safeSource}Details"
+        class="income-details"
+      >
+        <label>${source} Monthly Income</label>
+        <input 
+          type="number"
+          id="${prefix}${number}${safeSource}Amount"
+          name="${prefix} ${number} ${source} Monthly Income"
+          min="0"
+          step="0.01"
+        >
+
+        <label>Upload ${source} Proof of Income</label>
+        <input 
+          type="file"
+          id="${prefix}${number}${safeSource}Files"
+          name="${prefix} ${number} ${source} Proof of Income"
           accept="image/*,.pdf"
+          multiple
         >
       </div>
     </div>
   `;
 }
 
-function incomeSourceRow(group, number, labelPrefix, source) {
-  const clean = source.replace(/\s+/g, "");
-  const amountId = `${group}IncomeAmount${number}${clean}`;
+function toggleIncomeSource(prefix, number, safeSource) {
+  const checkbox = document.getElementById(prefix + number + safeSource + "Check");
+  const details = document.getElementById(prefix + number + safeSource + "Details");
+  const amount = document.getElementById(prefix + number + safeSource + "Amount");
+  const files = document.getElementById(prefix + number + safeSource + "Files");
 
-  return `
-    <div class="income-source-row">
-      <input
-        type="checkbox"
-        name="${labelPrefix} Income Source"
-        value="${source}"
-        data-income-group="${group}${number}"
-        data-amount-id="${amountId}"
-        onchange="toggleIncomeSource('${group}', ${number})"
-      >
-      <label style="margin-top:0;">${source}</label>
-    </div>
-
-    <div class="income-amount-box" id="${amountId}Box">
-      <label>${source} Monthly Income Amount</label>
-      <input
-        type="number"
-        id="${amountId}"
-        name="${labelPrefix} ${source} Monthly Income"
-        min="0"
-        step="0.01"
-      >
-    </div>
-  `;
+  if (checkbox.checked) {
+    details.style.display = "block";
+    amount.required = true;
+    files.required = true;
+  } else {
+    details.style.display = "none";
+    amount.required = false;
+    files.required = false;
+    amount.value = "";
+    files.value = "";
+  }
 }
 
 function createApplicantFields(number, askRelationship) {
@@ -546,22 +638,9 @@ function createApplicantFields(number, askRelationship) {
       <div id="emailError${number}" class="error-text">Emails do not match</div>
 
       <label>Upload Photo ID</label>
-      <input type="file" name="Applicant ${number} Photo ID" accept="image/*,.pdf" required>
+      <input type="file" name="Applicant ${number} Photo ID" accept="image/*,.pdf" multiple required>
 
-      <label>Source of Income</label>
-      ${incomeSourceChecklist("applicant", number, "Applicant " + number)}
-
-      <label>Employer / Income Source Name</label>
-      <input type="text" name="Applicant ${number} Employer or Income Source Name">
-
-      <label>Employer / Source Phone</label>
-      <input type="tel" name="Applicant ${number} Employer or Source Phone">
-
-      <label>Job Position / Income Description</label>
-      <input type="text" name="Applicant ${number} Job Position or Income Description">
-
-      <label>How long have you received this income?</label>
-      <input type="text" name="Applicant ${number} Income Length">
+      ${createIncomeSection("Applicant", number)}
 
     </div>
   `;
@@ -599,22 +678,10 @@ function createOccupantFields() {
         </select>
 
         <div id="adultInfo${i}" style="display:none;">
-
           <label>Upload Photo ID</label>
-          <input type="file" name="Additional Occupant ${i} Photo ID" accept="image/*,.pdf">
+          <input type="file" name="Additional Occupant ${i} Photo ID" accept="image/*,.pdf" multiple>
 
-          <label>Source of Income</label>
-          ${incomeSourceChecklist("occupant", i, "Additional Occupant " + i)}
-
-          <label>Employer / Income Source Name</label>
-          <input type="text" name="Additional Occupant ${i} Employer or Income Source Name">
-
-          <label>Employer / Source Phone</label>
-          <input type="tel" name="Additional Occupant ${i} Employer or Source Phone">
-
-          <label>How long have you received this income?</label>
-          <input type="text" name="Additional Occupant ${i} Income Length">
-
+          ${createIncomeSection("AdditionalOccupant", i)}
         </div>
 
         <div id="childInfo${i}" style="display:none;">
@@ -702,69 +769,6 @@ function checkEmailMatch(number) {
   }
 }
 
-function toggleIncomeSource(group, number) {
-  const checkboxes = document.querySelectorAll(
-    `input[data-income-group="${group}${number}"]`
-  );
-
-  let anyChecked = false;
-
-  checkboxes.forEach(checkbox => {
-    const amountId = checkbox.dataset.amountId;
-    const amountInput = document.getElementById(amountId);
-    const amountBox = document.getElementById(amountId + "Box");
-
-    if (checkbox.checked) {
-      anyChecked = true;
-      amountBox.style.display = "block";
-      amountInput.required = true;
-    } else {
-      amountBox.style.display = "none";
-      amountInput.required = false;
-      amountInput.value = "";
-    }
-  });
-
-  const details = document.getElementById(group + "IncomeDetails" + number);
-  const proof = document.getElementById(group + "Proof" + number);
-
-  if (details && proof) {
-    if (anyChecked) {
-      details.style.display = "block";
-      proof.required = true;
-    } else {
-      details.style.display = "none";
-      proof.required = false;
-      proof.value = "";
-    }
-  }
-}
-
-function validateIncomeSelection(group, number, label) {
-  const checkboxes = document.querySelectorAll(
-    `input[data-income-group="${group}${number}"]`
-  );
-
-  const checked = Array.from(checkboxes).filter(box => box.checked);
-
-  if (checked.length === 0) {
-    alert("Please select at least one income source for " + label);
-    return false;
-  }
-
-  for (const checkbox of checked) {
-    const amountInput = document.getElementById(checkbox.dataset.amountId);
-
-    if (!amountInput.value || Number(amountInput.value) < 0) {
-      alert("Please enter monthly income amount for " + checkbox.value + " for " + label);
-      amountInput.focus();
-      return false;
-    }
-  }
-
-  return true;
-}
-
 function toggleRelationshipInfo(select, number) {
   const section = document.getElementById("relationshipInfo" + number);
   section.style.display = select.value === "Other" ? "block" : "none";
@@ -785,7 +789,6 @@ function toggleAdultChildInfo(select, number) {
     childSection.style.display = "none";
   }
 }
-
 
 function toggleEvictionInfo(select) {
   const section = document.getElementById("evictionInfo");
@@ -829,10 +832,6 @@ function validateForm() {
       retypeEmail.style.border = "2px solid red";
       emailError.style.display = "block";
       alert("Emails do not match for Applicant " + i);
-      return false;
-    }
-
-    if (!validateIncomeSelection("applicant", i, "Applicant " + i)) {
       return false;
     }
   }
@@ -961,99 +960,5 @@ function clearSignature() {
 }
 </script>
 
-<div id="creditPopup" class="popup-overlay">
-  <div class="popup-box">
-
-    <h2>Important Credit Report Notice</h2>
-
-    <p>
-      To help speed up the application process and avoid additional screening fees,
-      applicants are strongly encouraged to upload a recent credit report PDF or screenshots from:
-    </p>
-
-    <ul>
-      <li>Credit Karma</li>
-      <li>Experian</li>
-      <li>Equifax</li>
-      <li>TransUnion</li>
-      <li>AnnualCreditReport.com</li>
-    </ul>
-
-    <p>
-      Accepted formats:
-      PDF or clear screenshots.
-    </p>
-
-    <p>
-      The report must:
-    </p>
-
-    <ul>
-      <li>Belong to the applicant</li>
-      <li>Show the applicant’s name</li>
-      <li>Be dated within the last 30 days</li>
-    </ul>
-
-    <p style="color:#c62828;font-weight:bold;">
-      If a recent credit report is not provided,
-      applicants may be required to complete a separate
-      credit/background screening through a third-party provider
-      at an additional cost of approximately $50.
-    </p>
-
-    <button onclick="closeCreditPopup()">
-      I Understand
-    </button>
-
-  </div>
-</div>
-
-<style>
-.popup-overlay{
-  position:fixed;
-  top:0;
-  left:0;
-  width:100%;
-  height:100%;
-  background:rgba(0,0,0,0.7);
-  display:flex;
-  justify-content:center;
-  align-items:center;
-  z-index:99999;
-}
-
-.popup-box{
-  background:white;
-  width:90%;
-  max-width:650px;
-  padding:25px;
-  border-radius:12px;
-  max-height:90vh;
-  overflow:auto;
-  font-family:Arial;
-}
-
-.popup-box h2{
-  margin-top:0;
-}
-
-.popup-box button{
-  background:#0077cc;
-  color:white;
-  border:none;
-  padding:12px 20px;
-  border-radius:8px;
-  cursor:pointer;
-  margin-top:15px;
-  font-size:16px;
-}
-</style>
-
-<script>
-function closeCreditPopup(){
-  document.getElementById("creditPopup").style.display = "none";
-}
-</script>
-  
 </body>
 </html>
