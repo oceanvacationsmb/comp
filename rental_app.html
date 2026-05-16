@@ -12,7 +12,7 @@
     }
 
     .form-box {
-      max-width: 750px;
+      max-width: 800px;
       margin: auto;
       background: white;
       padding: 25px;
@@ -22,7 +22,10 @@
 
     h2 {
       text-align: center;
-      margin-bottom: 25px;
+    }
+
+    h3 {
+      margin-top: 0;
     }
 
     label {
@@ -42,6 +45,11 @@
       box-sizing: border-box;
     }
 
+    small {
+      font-weight: normal;
+      color: #555;
+    }
+
     button {
       width: 100%;
       padding: 15px;
@@ -58,7 +66,7 @@
       background: #005fa3;
     }
 
-    .occupant-box {
+    .section-box {
       border: 1px solid #ccc;
       padding: 15px;
       margin-top: 20px;
@@ -74,37 +82,27 @@
 
   <h2>Rental Application</h2>
 
-  <form action="https://formsubmit.co/oceanvacationsmb@gmail.com" method="POST">
+  <form action="https://formsubmit.co/oceanvacationsmb@gmail.com" method="POST" onsubmit="return validateForm()">
 
     <input type="hidden" name="_subject" value="New Tenant Application">
     <input type="hidden" name="_captcha" value="false">
 
-    <label>Main Applicant Full Name</label>
-    <input type="text" name="Main Applicant Full Name" required>
+    <label>Application Type</label>
+    <select id="applicationType" name="Application Type" onchange="handleApplicationType()" required>
+      <option value="">Select</option>
+      <option value="Solo Applicant">Solo Applicant</option>
+      <option value="Joint Applicants">Joint Applicants</option>
+    </select>
 
-    <label>Phone Number</label>
-    <input type="tel" name="Phone Number" required>
+    <div id="applicantsBox"></div>
 
-    <label>Current Address</label>
-    <textarea name="Current Address" rows="3" required></textarea>
-
-    <label>Desired Move In Date</label>
-    <input type="date" name="Desired Move In Date">
-
-    <label>Current Landlord Name</label>
-    <input type="text" name="Current Landlord Name">
-
-    <label>Current Landlord Phone</label>
-    <input type="tel" name="Current Landlord Phone">
-
-    <label>Number of Occupants</label>
+    <label>Number of Other Occupants</label>
     <input 
       type="number" 
       id="occupantsCount" 
-      name="Number of Occupants" 
-      min="1"
+      name="Number of Other Occupants" 
+      min="0"
       onchange="createOccupantFields()"
-      required
     >
 
     <div id="occupantsBox"></div>
@@ -112,21 +110,21 @@
     <label>
       Pets?
       <br>
-      <small>
-        Subject to HOA approval. Some HOA/properties do not allow pets.
-      </small>
+      <small>Subject to HOA approval. Some HOA/properties do not allow pets.</small>
     </label>
 
-    <select name="Pets">
+    <select name="Pets" onchange="togglePetsInfo(this)">
       <option>No</option>
       <option>Yes</option>
     </select>
 
-    <label>If pets, describe</label>
-    <textarea name="Pet Details" rows="3"></textarea>
+    <div id="petsInfo" style="display:none;">
+      <label>Pet Details</label>
+      <textarea name="Pet Details" rows="3" placeholder="Type, breed, weight, age"></textarea>
+    </div>
 
     <label>Have you ever been evicted?</label>
-    <select name="Evicted Before" onchange="toggleEvictionInfo(this)">
+    <select name="Evicted Before" onchange="toggleEvictionInfo(this)" required>
       <option value="">Select</option>
       <option>No</option>
       <option>Yes</option>
@@ -153,6 +151,18 @@
 
     </div>
 
+    <label>Desired Move In Date</label>
+    <input type="date" name="Desired Move In Date">
+
+    <label>Current Address</label>
+    <textarea name="Current Address" rows="3" required></textarea>
+
+    <label>Current Landlord Name</label>
+    <input type="text" name="Current Landlord Name">
+
+    <label>Current Landlord Phone</label>
+    <input type="tel" name="Current Landlord Phone">
+
     <label>Additional Information</label>
     <textarea name="Additional Information" rows="4"></textarea>
 
@@ -164,144 +174,266 @@
 
 <script>
 
-function createOccupantFields() {
+function handleApplicationType() {
+  const type = document.getElementById("applicationType").value;
+  const box = document.getElementById("applicantsBox");
 
+  box.innerHTML = "";
+
+  if (type === "Solo Applicant") {
+    box.innerHTML = createApplicantFields(1, false);
+  }
+
+  if (type === "Joint Applicants") {
+    box.innerHTML = `
+      ${createApplicantFields(1, false)}
+      ${createApplicantFields(2, true)}
+    `;
+  }
+}
+
+function createApplicantFields(number, askRelationship) {
+  return `
+    <div class="section-box">
+
+      <h3>Applicant ${number}</h3>
+
+      <label>Full Name</label>
+      <input type="text" name="Applicant ${number} Full Name" required>
+
+      ${askRelationship ? `
+        <label>Relationship to Main Applicant</label>
+        <select name="Applicant ${number} Relationship" onchange="toggleRelationshipInfo(this, ${number})" required>
+          <option value="">Select</option>
+          <option>Spouse</option>
+          <option>Partner</option>
+          <option>Family Member</option>
+          <option>Roommate</option>
+          <option>Other</option>
+        </select>
+
+        <div id="relationshipInfo${number}" style="display:none;">
+          <label>Explain Relationship</label>
+          <input type="text" name="Applicant ${number} Relationship Explanation">
+        </div>
+      ` : ""}
+
+      <label>Will this applicant be signing the lease agreement?</label>
+      <select name="Applicant ${number} Signing Lease" onchange="toggleLeaseInfo(this, ${number})" required>
+        <option value="">Select</option>
+        <option>Yes</option>
+        <option>No</option>
+      </select>
+
+      <div id="leaseInfo${number}" style="display:none;">
+
+        <label>Social Security Number</label>
+        <input
+          type="password"
+          id="ssn${number}"
+          name="Applicant ${number} SSN"
+          placeholder="XXX-XX-XXXX"
+          autocomplete="off"
+        >
+
+        <label>Retype Social Security Number</label>
+        <input
+          type="password"
+          id="retypeSsn${number}"
+          name="Applicant ${number} Retype SSN"
+          placeholder="Retype SSN"
+          autocomplete="off"
+        >
+
+        <label>Date of Birth</label>
+        <input type="date" name="Applicant ${number} Date of Birth">
+
+        <label>Phone Number</label>
+        <input type="tel" name="Applicant ${number} Phone Number">
+
+        <label>Email</label>
+        <input
+          type="email"
+          id="email${number}"
+          name="Applicant ${number} Email"
+          autocomplete="off"
+        >
+
+        <label>Retype Email</label>
+        <input
+          type="email"
+          id="retypeEmail${number}"
+          name="Applicant ${number} Retype Email"
+          autocomplete="off"
+        >
+
+        <label>Does this applicant have income?</label>
+        <select name="Applicant ${number} Has Income" onchange="toggleIncomeInfo(this, ${number})">
+          <option value="">Select</option>
+          <option>Yes</option>
+          <option>No</option>
+        </select>
+
+        <div id="incomeInfo${number}" style="display:none;">
+
+          <label>Employment Status</label>
+          <select name="Applicant ${number} Employment Status">
+            <option value="">Select</option>
+            <option>Employed</option>
+            <option>Self Employed</option>
+            <option>Retired</option>
+            <option>Student</option>
+            <option>Other</option>
+          </select>
+
+          <label>Employer Name</label>
+          <input type="text" name="Applicant ${number} Employer Name">
+
+          <label>Employer Phone</label>
+          <input type="tel" name="Applicant ${number} Employer Phone">
+
+          <label>Job Position</label>
+          <input type="text" name="Applicant ${number} Job Position">
+
+          <label>Monthly Income</label>
+          <input type="text" name="Applicant ${number} Monthly Income">
+
+          <label>How long employed?</label>
+          <input type="text" name="Applicant ${number} Employment Length">
+
+        </div>
+
+      </div>
+
+    </div>
+  `;
+}
+
+function createOccupantFields() {
   const count = document.getElementById("occupantsCount").value;
   const box = document.getElementById("occupantsBox");
 
   box.innerHTML = "";
 
   for (let i = 1; i <= count; i++) {
-
     box.innerHTML += `
+      <div class="section-box">
 
-      <div class="occupant-box">
-
-        <h3>Occupant ${i}</h3>
+        <h3>Other Occupant ${i}</h3>
 
         <label>Full Name</label>
-        <input type="text" name="Occupant ${i} Full Name" required>
+        <input type="text" name="Other Occupant ${i} Full Name">
 
         <label>Adult or Child</label>
-        <select name="Occupant ${i} Adult or Child" required>
+        <select name="Other Occupant ${i} Adult or Child" onchange="toggleAdultChildInfo(this, ${i})">
           <option value="">Select</option>
           <option>Adult</option>
           <option>Child</option>
         </select>
 
-        <label>Will this person be signing the lease agreement?</label>
-        <select 
-          name="Occupant ${i} Signing Lease"
-          onchange="toggleLeaseInfo(this, ${i})"
-          required
-        >
+        <label>Relationship to Applicant</label>
+        <select name="Other Occupant ${i} Relationship">
           <option value="">Select</option>
-          <option>No</option>
-          <option>Yes</option>
+          <option>Child</option>
+          <option>Spouse</option>
+          <option>Family Member</option>
+          <option>Roommate</option>
+          <option>Other</option>
         </select>
 
-        <div id="leaseInfo${i}" style="display:none;">
+        <div id="adultInfo${i}" style="display:none;">
 
-          <label>Social Security Number</label>
-          <input
-            type="password"
-            name="Occupant ${i} SSN"
-            placeholder="XXX-XX-XXXX"
-            autocomplete="off"
-          >
+          <label>Will this person be signing the lease agreement?</label>
+          <select name="Other Occupant ${i} Signing Lease">
+            <option value="">Select</option>
+            <option>No</option>
+            <option>Yes</option>
+          </select>
 
-          <label>Retype Social Security Number</label>
-          <input
-            type="password"
-            name="Occupant ${i} Retype SSN"
-            placeholder="Retype SSN"
-            autocomplete="off"
-          >
+          <label>Does this person have income?</label>
+          <select name="Other Occupant ${i} Has Income" onchange="toggleOtherOccupantIncome(this, ${i})">
+            <option value="">Select</option>
+            <option>No</option>
+            <option>Yes</option>
+          </select>
 
-          <label>Date of Birth</label>
-          <input
-            type="date"
-            name="Occupant ${i} Date of Birth"
-          >
+          <div id="otherIncomeInfo${i}" style="display:none;">
 
-          <label>Phone Number</label>
-          <input
-            type="tel"
-            name="Occupant ${i} Phone Number"
-          >
+            <label>Employer Name</label>
+            <input type="text" name="Other Occupant ${i} Employer Name">
 
-          <label>Email</label>
-          <input
-            type="email"
-            name="Occupant ${i} Email"
-            autocomplete="off"
-          >
+            <label>Employer Phone</label>
+            <input type="tel" name="Other Occupant ${i} Employer Phone">
 
-          <label>Retype Email</label>
-          <input
-            type="email"
-            name="Occupant ${i} Retype Email"
-            autocomplete="off"
-          >
+            <label>Monthly Income</label>
+            <input type="text" name="Other Occupant ${i} Monthly Income">
 
-          <label>Employer Name</label>
-          <input
-            type="text"
-            name="Occupant ${i} Employer Name"
-          >
-
-          <label>Employer Phone</label>
-          <input
-            type="tel"
-            name="Occupant ${i} Employer Phone"
-          >
-
-          <label>Job Position</label>
-          <input
-            type="text"
-            name="Occupant ${i} Job Position"
-          >
-
-          <label>Monthly Income</label>
-          <input
-            type="text"
-            name="Occupant ${i} Monthly Income"
-          >
-
-          <label>How long employed?</label>
-          <input
-            type="text"
-            name="Occupant ${i} Employment Length"
-          >
+          </div>
 
         </div>
 
       </div>
-
     `;
   }
 }
 
 function toggleLeaseInfo(select, number) {
-
   const section = document.getElementById("leaseInfo" + number);
+  section.style.display = select.value === "Yes" ? "block" : "none";
+}
 
-  if (select.value === "Yes") {
-    section.style.display = "block";
-  } else {
-    section.style.display = "none";
-  }
+function toggleIncomeInfo(select, number) {
+  const section = document.getElementById("incomeInfo" + number);
+  section.style.display = select.value === "Yes" ? "block" : "none";
+}
+
+function toggleRelationshipInfo(select, number) {
+  const section = document.getElementById("relationshipInfo" + number);
+  section.style.display = select.value === "Other" ? "block" : "none";
+}
+
+function toggleAdultChildInfo(select, number) {
+  const section = document.getElementById("adultInfo" + number);
+  section.style.display = select.value === "Adult" ? "block" : "none";
+}
+
+function toggleOtherOccupantIncome(select, number) {
+  const section = document.getElementById("otherIncomeInfo" + number);
+  section.style.display = select.value === "Yes" ? "block" : "none";
+}
+
+function togglePetsInfo(select) {
+  const section = document.getElementById("petsInfo");
+  section.style.display = select.value === "Yes" ? "block" : "none";
 }
 
 function toggleEvictionInfo(select) {
-
   const section = document.getElementById("evictionInfo");
+  section.style.display = select.value === "Yes" ? "block" : "none";
+}
 
-  if (select.value === "Yes") {
-    section.style.display = "block";
-  } else {
-    section.style.display = "none";
+function validateForm() {
+  const applicantType = document.getElementById("applicationType").value;
+  const totalApplicants = applicantType === "Joint Applicants" ? 2 : 1;
+
+  for (let i = 1; i <= totalApplicants; i++) {
+    const ssn = document.getElementById("ssn" + i);
+    const retypeSsn = document.getElementById("retypeSsn" + i);
+    const email = document.getElementById("email" + i);
+    const retypeEmail = document.getElementById("retypeEmail" + i);
+
+    if (ssn && retypeSsn && ssn.value !== retypeSsn.value) {
+      alert("Social Security Numbers do not match for Applicant " + i);
+      return false;
+    }
+
+    if (email && retypeEmail && email.value !== retypeEmail.value) {
+      alert("Emails do not match for Applicant " + i);
+      return false;
+    }
   }
+
+  return true;
 }
 
 </script>
