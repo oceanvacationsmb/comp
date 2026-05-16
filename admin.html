@@ -78,6 +78,18 @@
       margin-top:20px;
     }
 
+    .success-message{
+      color:green;
+      font-weight:bold;
+      margin-top:10px;
+    }
+
+    .error-message{
+      color:red;
+      font-weight:bold;
+      margin-top:10px;
+    }
+
     textarea.message{
       height:180px;
     }
@@ -220,7 +232,11 @@
     <label>Notes</label>
     <textarea id="appNotes" rows="4"></textarea>
 
-    <button class="green" onclick="createApplicationLink(event)">Invite To Apply</button>
+    <button class="green" onclick="createApplicationLink(event)">Generate Message</button>
+
+    <button id="inviteButton" class="gray hidden" onclick="openGmailInvite()">Invite To Apply</button>
+
+    <div id="statusMessage"></div>
 
     <div class="result hidden" id="linkResult">
       <h3>Application Link Created</h3>
@@ -253,7 +269,7 @@ function login(){
   adminPassword = document.getElementById("adminPassword").value;
 
   if(!adminPassword){
-    alert("Enter password");
+    showStatus("Enter password", "error");
     return;
   }
 
@@ -276,11 +292,17 @@ async function api(path, options = {}){
   const data = await response.json();
 
   if(!data.success){
-    alert(data.error || "API Error");
     throw new Error(data.error || "API Error");
   }
 
   return data;
+}
+
+function showStatus(message, type){
+  const box = document.getElementById("statusMessage");
+
+  box.innerHTML =
+    `<p class="${type === "error" ? "error-message" : "success-message"}">${message}</p>`;
 }
 
 function togglePetDeposit(){
@@ -329,11 +351,15 @@ function cancelPropertyForm(){
 }
 
 async function loadProperties(){
-  const data = await api("/api/properties");
-  properties = data.properties || [];
+  try{
+    const data = await api("/api/properties");
+    properties = data.properties || [];
 
-  renderProperties();
-  renderPropertyDropdown();
+    renderProperties();
+    renderPropertyDropdown();
+  }catch(error){
+    showStatus("Could not load properties. Check admin password or backend.", "error");
+  }
 }
 
 function renderPropertyDropdown(){
@@ -407,24 +433,29 @@ async function saveProperty(){
   };
 
   if(!body.propertyName){
-    alert("Property name required");
+    showStatus("Property name required", "error");
     return;
   }
 
-  if(id){
-    await api("/api/properties/" + id, {
-      method:"PUT",
-      body:JSON.stringify(body)
-    });
-  }else{
-    await api("/api/properties", {
-      method:"POST",
-      body:JSON.stringify(body)
-    });
-  }
+  try{
+    if(id){
+      await api("/api/properties/" + id, {
+        method:"PUT",
+        body:JSON.stringify(body)
+      });
+    }else{
+      await api("/api/properties", {
+        method:"POST",
+        body:JSON.stringify(body)
+      });
+    }
 
-  cancelPropertyForm();
-  loadProperties();
+    cancelPropertyForm();
+    loadProperties();
+    showStatus("Property saved.", "success");
+  }catch(error){
+    showStatus("Failed to save property.", "error");
+  }
 }
 
 function editProperty(id){
@@ -453,11 +484,16 @@ async function deleteProperty(id){
     return;
   }
 
-  await api("/api/properties/" + id, {
-    method:"DELETE"
-  });
+  try{
+    await api("/api/properties/" + id, {
+      method:"DELETE"
+    });
 
-  loadProperties();
+    loadProperties();
+    showStatus("Property deleted.", "success");
+  }catch(error){
+    showStatus("Failed to delete property.", "error");
+  }
 }
 
 function selectProperty(id){
@@ -476,6 +512,8 @@ function selectProperty(id){
   document.getElementById("appNotes").value = property.notes || "";
   document.getElementById("tenantEmail").value = "";
   document.getElementById("linkResult").classList.add("hidden");
+  document.getElementById("inviteButton").classList.add("hidden");
+  document.getElementById("statusMessage").innerHTML = "";
 
   const preview = document.getElementById("selectedPropertyPreview");
 
@@ -512,7 +550,7 @@ async function createApplicationLink(event){
   const property = properties.find(p => p.id === propertyId);
 
   if(!property){
-    alert("Select property");
+    showStatus("Select property first.", "error");
     return;
   }
 
@@ -590,43 +628,49 @@ $${application.deposit}
 
 ${petText}Thank you`;
 
+    document.getElementById("inviteButton").classList.remove("hidden");
 
-const subject =
-  encodeURIComponent("Rental Application");
+    showStatus("Message generated. Click Invite To Apply to open Gmail.", "success");
 
-const body =
-  encodeURIComponent(
-    document.getElementById("tenantMessage").value
-  );
-
-const gmailUrl =
-
-`https://mail.google.com/mail/?view=cm&fs=1&to=${tenantEmail}&su=${subject}&body=${body}`;
-
-window.open(gmailUrl, "_blank");
-
-document.getElementById("linkResult").insertAdjacentHTML(
-  "afterbegin",
-  "<p style='color:green;font-weight:bold;'>Invite created. Gmail compose opened.</p>"
-);
-    
   } catch(error) {
-    alert("Failed to create application link.");
+    showStatus("Failed to create application link.", "error");
   }
 
   button.disabled = false;
-  button.innerText = "Generate Link";
+  button.innerText = "Generate Message";
+}
+
+function openGmailInvite(){
+  const tenantEmail = document.getElementById("tenantEmail").value;
+
+  if(!tenantEmail){
+    showStatus("Tenant email is required before opening Gmail.", "error");
+    return;
+  }
+
+  const subject = encodeURIComponent("Rental Application");
+
+  const body = encodeURIComponent(
+    document.getElementById("tenantMessage").value
+  );
+
+  const gmailUrl =
+    `https://mail.google.com/mail/?view=cm&fs=1&to=${tenantEmail}&su=${subject}&body=${body}`;
+
+  window.open(gmailUrl, "_blank");
+
+  showStatus("Gmail opened. Review and click Send.", "success");
 }
 
 function copyLink(){
   navigator.clipboard.writeText(lastGeneratedLink);
-  alert("Link copied");
+  showStatus("Link copied.", "success");
 }
 
 function copyMessage(){
   const message = document.getElementById("tenantMessage").value;
   navigator.clipboard.writeText(message);
-  alert("Message copied");
+  showStatus("Message copied.", "success");
 }
 </script>
 
