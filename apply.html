@@ -865,5 +865,99 @@ function clearSignature() {
 }
 </script>
 
+<div id="creditPopup" class="popup-overlay">
+  <div class="popup-box">
+
+    <h2>Important Credit Report Notice</h2>
+
+    <p>
+      To help speed up the application process and avoid additional screening fees,
+      applicants are strongly encouraged to upload a recent credit report PDF or screenshots from:
+    </p>
+
+    <ul>
+      <li>Credit Karma</li>
+      <li>Experian</li>
+      <li>Equifax</li>
+      <li>TransUnion</li>
+      <li>AnnualCreditReport.com</li>
+    </ul>
+
+    <p>
+      Accepted formats:
+      PDF or clear screenshots.
+    </p>
+
+    <p>
+      The report must:
+    </p>
+
+    <ul>
+      <li>Belong to the applicant</li>
+      <li>Show the applicant’s name</li>
+      <li>Be dated within the last 30 days</li>
+    </ul>
+
+    <p style="color:#c62828;font-weight:bold;">
+      If a recent credit report is not provided,
+      applicants may be required to complete a separate
+      credit/background screening through a third-party provider
+      at an additional cost of approximately $50.
+    </p>
+
+    <button onclick="closeCreditPopup()">
+      I Understand
+    </button>
+
+  </div>
+</div>
+
+<style>
+.popup-overlay{
+  position:fixed;
+  top:0;
+  left:0;
+  width:100%;
+  height:100%;
+  background:rgba(0,0,0,0.7);
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  z-index:99999;
+}
+
+.popup-box{
+  background:white;
+  width:90%;
+  max-width:650px;
+  padding:25px;
+  border-radius:12px;
+  max-height:90vh;
+  overflow:auto;
+  font-family:Arial;
+}
+
+.popup-box h2{
+  margin-top:0;
+}
+
+.popup-box button{
+  background:#0077cc;
+  color:white;
+  border:none;
+  padding:12px 20px;
+  border-radius:8px;
+  cursor:pointer;
+  margin-top:15px;
+  font-size:16px;
+}
+</style>
+
+<script>
+function closeCreditPopup(){
+  document.getElementById("creditPopup").style.display = "none";
+}
+</script>
+  
 </body>
 </html>
