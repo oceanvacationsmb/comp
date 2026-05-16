@@ -4,41 +4,27 @@ import fileUpload from "express-fileupload";
 import dotenv from "dotenv";
 import { Dropbox } from "dropbox";
 import fetch from "node-fetch";
-import fs from "fs-extra";
+import PDFDocument from "pdfkit";
 
 dotenv.config();
 
 const app = express();
 
 app.use(cors());
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(express.json({ limit: "25mb" }));
+app.use(express.urlencoded({ extended: true, limit: "25mb" }));
 app.use(fileUpload());
 app.use(express.static("."));
 
 const PORT = process.env.PORT || 3000;
-
-const PROPERTIES_FILE = "./properties.json";
-const APPLICATIONS_FILE = "./applications.json";
 
 const dbx = new Dropbox({
   accessToken: process.env.DROPBOX_ACCESS_TOKEN,
   fetch
 });
 
-async function ensureFiles() {
-  if (!(await fs.pathExists(PROPERTIES_FILE))) {
-    await fs.writeJson(PROPERTIES_FILE, [], { spaces: 2 });
-  }
-
-  if (!(await fs.pathExists(APPLICATIONS_FILE))) {
-    await fs.writeJson(APPLICATIONS_FILE, [], { spaces: 2 });
-  }
-}
-
-function makeCode() {
-  return "OV-" + Math.random().toString(36).substring(2, 8).toUpperCase();
-}
+const PROPERTIES_PATH = "/System/properties.json";
+const APPLICATIONS_PATH = "/System/applications.json";
 
 function cleanName(value) {
   return String(value || "Unknown")
@@ -46,15 +32,12 @@ function cleanName(value) {
     .trim();
 }
 
+function makeCode() {
+  return "OV-" + Math.random().toString(36).substring(2, 8).toUpperCase();
+}
+
 function checkAdminPassword(req, res, next) {
   const password = req.headers["x-admin-password"];
-
-  if (!process.env.ADMIN_PASSWORD) {
-    return res.status(500).json({
-      success: false,
-      error: "ADMIN_PASSWORD is missing"
-    });
-  }
 
   if (password !== process.env.ADMIN_PASSWORD) {
     return res.status(401).json({
@@ -66,10 +49,78 @@ function checkAdminPassword(req, res, next) {
   next();
 }
 
-app.get("/api/properties", checkAdminPassword, async (req, res) => {
-  await ensureFiles();
+async function readDropboxJson(path) {
+  try {
+    const result = await dbx.filesDownload({ path });
+    const buffer = result.result.fileBinary;
+    return JSON.parse(buffer.toString());
+  } catch (error) {
+    if (error?.status === 409) {
+      await writeDropboxJson(path, []);
+      return [];
+    }
 
-  const properties = await fs.readJson(PROPERTIES_FILE);
+    throw error;
+  }
+}
+
+async function writeDropboxJson(path, data) {
+  await dbx.filesUpload({
+    path,
+    contents: Buffer.from(JSON.stringify(data, null, 2)),
+    mode: { ".tag": "overwrite" },
+    autorename: false
+  });
+}
+
+async function createApplicationPDF(data) {
+  return new Promise((resolve, reject) => {
+    const doc = new PDFDocument({ margin: 40 });
+    const chunks = [];
+
+    doc.on("data", chunk => chunks.push(chunk));
+    doc.on("end", () => resolve(Buffer.concat(chunks)));
+    doc.on("error", reject);
+
+    doc.fontSize(20).text("Rental Application", { align: "center" });
+    doc.moveDown();
+
+    doc.fontSize(14).text("Application Details", { underline: true });
+    doc.moveDown(0.5);
+
+    for (const key in data) {
+      if (key === "Applicant Signature") continue;
+      if (!data[key]) continue;
+
+      doc.fontSize(10).text(`${key}:`, { continued: true });
+      doc.fontSize(10).text(` ${data[key]}`);
+      doc.moveDown(0.25);
+    }
+
+    if (data["Applicant Signature"]) {
+      try {
+        doc.addPage();
+        doc.fontSize(14).text("Applicant Signature", { underline: true });
+        doc.moveDown();
+
+        const base64 = data["Applicant Signature"].replace(/^data:image\/png;base64,/, "");
+        const imgBuffer = Buffer.from(base64, "base64");
+
+        doc.image(imgBuffer, {
+          fit: [450, 180],
+          align: "left"
+        });
+      } catch (e) {
+        doc.text("Signature could not be added to PDF.");
+      }
+    }
+
+    doc.end();
+  });
+}
+
+app.get("/api/properties", checkAdminPassword, async (req, res) => {
+  const properties = await readDropboxJson(PROPERTIES_PATH);
 
   res.json({
     success: true,
@@ -78,9 +129,7 @@ app.get("/api/properties", checkAdminPassword, async (req, res) => {
 });
 
 app.post("/api/properties", checkAdminPassword, async (req, res) => {
-  await ensureFiles();
-
-  const properties = await fs.readJson(PROPERTIES_FILE);
+  const properties = await readDropboxJson(PROPERTIES_PATH);
 
   const newProperty = {
     id: Date.now().toString(),
@@ -88,7 +137,7 @@ app.post("/api/properties", checkAdminPassword, async (req, res) => {
     address: req.body.address || "",
     defaultRent: req.body.defaultRent || "",
     defaultDeposit: req.body.defaultDeposit || "",
-    defaultApplicationFee: req.body.defaultApplicationFee || "",
+    defaultAvailableDate: req.body.defaultAvailableDate || "",
     defaultPetsAllowed: req.body.defaultPetsAllowed || "No",
     defaultPetDeposit: req.body.defaultPetDeposit || "",
     notes: req.body.notes || "",
@@ -97,7 +146,7 @@ app.post("/api/properties", checkAdminPassword, async (req, res) => {
 
   properties.push(newProperty);
 
-  await fs.writeJson(PROPERTIES_FILE, properties, { spaces: 2 });
+  await writeDropboxJson(PROPERTIES_PATH, properties);
 
   res.json({
     success: true,
@@ -106,9 +155,7 @@ app.post("/api/properties", checkAdminPassword, async (req, res) => {
 });
 
 app.put("/api/properties/:id", checkAdminPassword, async (req, res) => {
-  await ensureFiles();
-
-  const properties = await fs.readJson(PROPERTIES_FILE);
+  const properties = await readDropboxJson(PROPERTIES_PATH);
 
   const index = properties.findIndex(p => p.id === req.params.id);
 
@@ -125,14 +172,14 @@ app.put("/api/properties/:id", checkAdminPassword, async (req, res) => {
     address: req.body.address || "",
     defaultRent: req.body.defaultRent || "",
     defaultDeposit: req.body.defaultDeposit || "",
-    defaultApplicationFee: req.body.defaultApplicationFee || "",
+    defaultAvailableDate: req.body.defaultAvailableDate || "",
     defaultPetsAllowed: req.body.defaultPetsAllowed || "No",
     defaultPetDeposit: req.body.defaultPetDeposit || "",
     notes: req.body.notes || "",
     updatedAt: new Date().toISOString()
   };
 
-  await fs.writeJson(PROPERTIES_FILE, properties, { spaces: 2 });
+  await writeDropboxJson(PROPERTIES_PATH, properties);
 
   res.json({
     success: true,
@@ -141,13 +188,11 @@ app.put("/api/properties/:id", checkAdminPassword, async (req, res) => {
 });
 
 app.delete("/api/properties/:id", checkAdminPassword, async (req, res) => {
-  await ensureFiles();
-
-  let properties = await fs.readJson(PROPERTIES_FILE);
+  let properties = await readDropboxJson(PROPERTIES_PATH);
 
   properties = properties.filter(p => p.id !== req.params.id);
 
-  await fs.writeJson(PROPERTIES_FILE, properties, { spaces: 2 });
+  await writeDropboxJson(PROPERTIES_PATH, properties);
 
   res.json({
     success: true
@@ -155,9 +200,7 @@ app.delete("/api/properties/:id", checkAdminPassword, async (req, res) => {
 });
 
 app.post("/api/application-links", checkAdminPassword, async (req, res) => {
-  await ensureFiles();
-
-  const applications = await fs.readJson(APPLICATIONS_FILE);
+  const applications = await readDropboxJson(APPLICATIONS_PATH);
 
   const code = makeCode();
 
@@ -170,7 +213,6 @@ app.post("/api/application-links", checkAdminPassword, async (req, res) => {
     rent: req.body.rent || "",
     availableDate: req.body.availableDate || "",
     deposit: req.body.deposit || "",
-    applicationFee: req.body.applicationFee || "",
     petsAllowed: req.body.petsAllowed || "No",
     petDeposit: req.body.petDeposit || "",
     notes: req.body.notes || "",
@@ -180,7 +222,7 @@ app.post("/api/application-links", checkAdminPassword, async (req, res) => {
 
   applications.push(newApplication);
 
-  await fs.writeJson(APPLICATIONS_FILE, applications, { spaces: 2 });
+  await writeDropboxJson(APPLICATIONS_PATH, applications);
 
   res.json({
     success: true,
@@ -189,9 +231,7 @@ app.post("/api/application-links", checkAdminPassword, async (req, res) => {
 });
 
 app.get("/api/application/:code", async (req, res) => {
-  await ensureFiles();
-
-  const applications = await fs.readJson(APPLICATIONS_FILE);
+  const applications = await readDropboxJson(APPLICATIONS_PATH);
 
   const application = applications.find(
     app => app.code === req.params.code && app.status === "Open"
@@ -212,41 +252,38 @@ app.get("/api/application/:code", async (req, res) => {
 
 app.post("/submit-application", async (req, res) => {
   try {
-    await ensureFiles();
-
     const code = req.body.applicationCode || "";
-    const applications = await fs.readJson(APPLICATIONS_FILE);
+
+    const applications = await readDropboxJson(APPLICATIONS_PATH);
 
     const savedApplication = applications.find(app => app.code === code);
 
-    const applicantName =
-      cleanName(
-        req.body["Applicant 1 First Name"] + " " + req.body["Applicant 1 Last Name"]
-      ) || "Unknown Applicant";
+    const applicantName = cleanName(
+      `${req.body["Applicant 1 First Name"] || ""} ${req.body["Applicant 1 Last Name"] || ""}`
+    );
 
-    const property =
-      cleanName(
-        req.body.property ||
-        req.body.propertyName ||
-        savedApplication?.propertyName ||
-        "Unknown Property"
-      );
+    const property = cleanName(
+      req.body.property ||
+      req.body.propertyName ||
+      savedApplication?.propertyName ||
+      "Unknown Property"
+    );
 
     const folderName =
-      `/Rental Applications/${property}/${code || Date.now()}-${applicantName}`;
+      `/Rental Applications/${property}/${code || Date.now()}-${applicantName || "Unknown Applicant"}`;
 
     await dbx.filesCreateFolderV2({
       path: folderName,
       autorename: true
     });
 
-    const fieldsFile = Buffer.from(
-      JSON.stringify(req.body, null, 2)
-    );
+    const pdfBuffer = await createApplicationPDF(req.body);
 
     await dbx.filesUpload({
-      path: `${folderName}/application.json`,
-      contents: fieldsFile
+      path: `${folderName}/rental-application.pdf`,
+      contents: pdfBuffer,
+      mode: { ".tag": "overwrite" },
+      autorename: false
     });
 
     if (req.files) {
@@ -259,7 +296,8 @@ app.post("/submit-application", async (req, res) => {
 
             await dbx.filesUpload({
               path: `${folderName}/${safeName}`,
-              contents: item.data
+              contents: item.data,
+              autorename: true
             });
           }
         } else {
@@ -267,7 +305,8 @@ app.post("/submit-application", async (req, res) => {
 
           await dbx.filesUpload({
             path: `${folderName}/${safeName}`,
-            contents: file.data
+            contents: file.data,
+            autorename: true
           });
         }
       }
@@ -278,7 +317,7 @@ app.post("/submit-application", async (req, res) => {
       savedApplication.submittedAt = new Date().toISOString();
       savedApplication.dropboxFolder = folderName;
 
-      await fs.writeJson(APPLICATIONS_FILE, applications, { spaces: 2 });
+      await writeDropboxJson(APPLICATIONS_PATH, applications);
     }
 
     res.json({
@@ -296,8 +335,6 @@ app.post("/submit-application", async (req, res) => {
   }
 });
 
-ensureFiles().then(() => {
-  app.listen(PORT, () => {
-    console.log("Server running on port " + PORT);
-  });
+app.listen(PORT, () => {
+  console.log("Server running on port " + PORT);
 });
