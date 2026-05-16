@@ -5,6 +5,7 @@ import dotenv from "dotenv";
 import { Dropbox } from "dropbox";
 import fetch from "node-fetch";
 import PDFDocument from "pdfkit";
+import { Resend } from "resend";
 
 dotenv.config();
 
@@ -22,6 +23,10 @@ const dbx = new Dropbox({
   accessToken: process.env.DROPBOX_ACCESS_TOKEN,
   fetch
 });
+
+const resend = new Resend(
+  process.env.RESEND_API_KEY
+);
 
 const PROPERTIES_PATH = "/System/properties.json";
 const APPLICATIONS_PATH = "/System/applications.json";
@@ -199,35 +204,88 @@ app.delete("/api/properties/:id", checkAdminPassword, async (req, res) => {
   });
 });
 
-app.post("/api/application-links", checkAdminPassword, async (req, res) => {
-  const applications = await readDropboxJson(APPLICATIONS_PATH);
+applications.push(newApplication);
 
-  const code = makeCode();
+await writeDropboxJson(
+  APPLICATIONS_PATH,
+  applications
+);
 
-  const newApplication = {
-    code,
-    propertyId: req.body.propertyId || "",
-    propertyName: req.body.propertyName || "",
-    address: req.body.address || "",
-    tenantEmail: req.body.tenantEmail || "",
-    rent: req.body.rent || "",
-    availableDate: req.body.availableDate || "",
-    deposit: req.body.deposit || "",
-    petsAllowed: req.body.petsAllowed || "No",
-    petDeposit: req.body.petDeposit || "",
-    notes: req.body.notes || "",
-    status: "Open",
-    createdAt: new Date().toISOString()
-  };
+const link =
 
-  applications.push(newApplication);
+`https://oceanvacationsmb.github.io/rentapp/apply.html?code=${code}`;
 
-  await writeDropboxJson(APPLICATIONS_PATH, applications);
+let petText = "";
 
-  res.json({
-    success: true,
-    application: newApplication
-  });
+if(newApplication.petsAllowed !== "No"){
+
+  petText =
+
+`Pets:
+${newApplication.petsAllowed}
+
+Pet Deposit / Pet Rent:
+${newApplication.petDeposit || "N/A"}
+
+`;
+}
+
+if(newApplication.tenantEmail){
+
+  try {
+
+    await resend.emails.send({
+
+      from:
+        process.env.FROM_EMAIL,
+
+      to:
+        newApplication.tenantEmail,
+
+      subject:
+        "Rental Application",
+
+      text:
+
+`Hi,
+
+Please complete the rental application using this link:
+
+${link}
+
+Property:
+${newApplication.propertyName}
+
+Address:
+${newApplication.address}
+
+Rent:
+$${newApplication.rent}
+
+Available Date:
+${newApplication.availableDate || "N/A"}
+
+Security Deposit:
+$${newApplication.deposit}
+
+${petText}Thank you`
+    });
+
+    console.log("EMAIL SENT");
+
+  } catch(error){
+
+    console.log(
+      "EMAIL ERROR:",
+      error
+    );
+  }
+}
+
+res.json({
+  success: true,
+  application: newApplication
+});
 });
 
 app.get("/api/application/:code", async (req, res) => {
